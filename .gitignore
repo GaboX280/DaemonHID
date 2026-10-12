@@ -1,0 +1,30 @@
+# Arduino IDE / build output
+build/
+out/
+*.elf
+*.hex
+*.bin
+*.map
+*.uf2
+
+# Compiled objects and dependency files
+*.o
+*.d
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*~
+
+# Local logs and temporary output
+*.log
+tmp/
+temp/
+
+# Local secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+secrets/
