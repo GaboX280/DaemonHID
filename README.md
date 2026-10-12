@@ -16,34 +16,62 @@
 
 - Arduino UNO R4 WiFi.
 - Compatible USB data cable.
+- MicroSD card module (planned; not yet available).
 - Additional components from the starter kit, depending on each test.
 
 HID functionality depends on the hardware, Arduino core, and compatible libraries. Support for a feature must not be assumed until it has been verified on the actual board.
 
 ## Repository Structure
 
+The initial layout separates firmware, web assets, hardware references, and documentation:
+
 ```text
 DaemonHID/
 ├── README.md
 ├── .gitignore
 ├── firmware/
-│   ├── usb_hid/
 │   └── wireless/
+│       └── DaemonHID/
+│           ├── DaemonHID.ino
+│           ├── AppConfig.h
+│           ├── NetworkManager.h
+│           ├── NetworkManager.cpp
+│           ├── HttpServer.h
+│           ├── HttpServer.cpp
+│           ├── StorageManager.h
+│           ├── StorageManager.cpp
+│           ├── DeviceController.h
+│           └── DeviceController.cpp
+├── web/
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
 ├── hardware/
 ├── docs/
 └── tests/
 ```
 
+The firmware files are grouped in one Arduino IDE sketch folder. The `.ino` filename matches the sketch folder name. The `.h` and `.cpp` module files are kept next to the sketch initially to make them easy to open as IDE tabs. The `web/` directory contains the website assets that will later be copied to the microSD card.
+
 Directories will be added as needed; Git does not track empty directories.
+
+## Planned Module Responsibilities
+
+- **`AppConfig.h`:** shared compile-time settings such as the HTTP port and web asset paths.
+- **`NetworkManager`:** manages the local Wi-Fi access point using the board's supported networking library.
+- **`HttpServer`:** handles browser requests and sends HTTP responses.
+- **`StorageManager`:** initializes the microSD card and reads web assets. This module will be implemented when the card module is available.
+- **`DeviceController`:** keeps future device-control logic separate from networking and HTTP handling.
 
 ## Development Plan
 
 1. **Setup:** Document the project and keep the repository organized.
-2. **USB validation:** Check which USB HID capabilities the board supports and run a local test that is visible and initiated by a physical action.
-3. **Controlled input:** Implement a limited, documented demonstration that requires explicit activation.
-4. **Wireless interface:** Develop and test the local web interface independently.
-5. **Integration:** Define how the features communicate and validate the security boundaries.
-6. **Documentation:** Record setup details, results, limitations, and reproducible testing steps.
+2. **Firmware skeleton:** Create the sketch and configuration file, then confirm the project structure.
+3. **Wireless interface:** Implement and validate the local Wi-Fi access point.
+4. **Web server:** Serve a basic page and a status endpoint before adding microSD support.
+5. **MicroSD storage:** Read `index.html`, `styles.css`, and `app.js` from the card.
+6. **USB validation:** Check which USB HID capabilities the board supports and run a local test that is visible and initiated by a physical action.
+7. **Integration and documentation:** Validate security boundaries and record results, limitations, and reproducible testing steps.
 
 ## Security Principles
 
@@ -55,15 +83,17 @@ Directories will be added as needed; Git does not track empty directories.
 
 ## Development Environment
 
-Firmware will be developed using the Arduino IDE. Before adding libraries or finalizing the architecture, compatibility with the Arduino UNO R4 WiFi will be verified and the versions in use will be documented.
+Firmware will be developed using the Arduino IDE. The wireless functionality will use the `WiFiS3` library supplied by the Arduino UNO R4 board package. Library and board-core versions will be documented after the first local compile.
 
 ## Current Status
 
 - [x] Git repository initialized.
-- [x] Initial README created.
+- [x] README translated to English.
+- [ ] Firmware skeleton created.
+- [ ] Wi-Fi access point validated on the board.
+- [ ] Local HTTP server validated.
+- [ ] microSD integration validated.
 - [ ] USB HID functionality validated on the board.
-- [ ] First firmware test documented.
-- [ ] Local web interface documented.
 - [ ] Hardware tests and wiring diagrams added.
 
 ## License
