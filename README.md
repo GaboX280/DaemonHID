@@ -1,71 +1,101 @@
 # DaemonHID
 
-**DaemonHID** es un proyecto educativo de hardware y firmware basado en el **Arduino UNO R4 WiFi**. Su objetivo es explorar la interacción entre hardware físico, conectividad inalámbrica local y funciones de entrada USB, con un enfoque en el aprendizaje, la seguridad y las pruebas controladas.
+**DaemonHID** is an educational hardware and firmware project based on the **Arduino UNO R4 WiFi**. Its goal is to explore the interaction between physical hardware, local wireless connectivity, and USB input capabilities, with an emphasis on learning, security, and controlled testing.
 
-> **Estado:** etapa inicial de desarrollo. Las funciones descritas como futuras todavía deben implementarse y validarse.
+> **Status:** Early development. Features described as future work have not yet been implemented or validated.
 
-## Objetivos
+## Goals
 
-- Estudiar las capacidades y limitaciones del Arduino UNO R4 WiFi.
-- Desarrollar una interfaz web local mediante el punto de acceso Wi-Fi de la placa.
-- Investigar la compatibilidad de la placa con funciones USB HID y validar primero una prueba mínima.
-- Documentar conexiones, decisiones de diseño y resultados reproducibles.
-- Incorporar controles físicos y límites claros para que las funciones de entrada se activen de forma intencional.
+- Study the capabilities and limitations of the Arduino UNO R4 WiFi.
+- Develop a local web interface using the board's Wi-Fi access point.
+- Investigate the board's compatibility with USB HID features and first validate a minimal proof of concept.
+- Document wiring, design decisions, and reproducible results.
+- Include physical controls and clear safeguards so input functions are activated intentionally.
 
 ## Hardware
 
 - Arduino UNO R4 WiFi.
-- Cable USB de datos compatible.
-- Componentes adicionales del kit de inicio, según cada prueba.
+- Compatible USB data cable.
+- MicroSD card module (planned; not yet available).
+- Additional components from the starter kit, depending on each test.
 
-La disponibilidad de funciones HID depende del hardware, del core de Arduino y de las bibliotecas compatibles. No se debe asumir que una función está soportada hasta comprobarla en la placa real.
+HID functionality depends on the hardware, Arduino core, and compatible libraries. Support for a feature must not be assumed until it has been verified on the actual board.
 
-## Estructura del repositorio
+## Repository Structure
+
+The initial layout separates firmware, web assets, hardware references, and documentation:
 
 ```text
 DaemonHID/
 ├── README.md
 ├── .gitignore
 ├── firmware/
-│   ├── usb_hid/
 │   └── wireless/
+│       └── DaemonHID/
+│           ├── DaemonHID.ino
+│           ├── AppConfig.h
+│           ├── NetworkManager.h
+│           ├── NetworkManager.cpp
+│           ├── HttpServer.h
+│           ├── HttpServer.cpp
+│           ├── StorageManager.h
+│           ├── StorageManager.cpp
+│           ├── DeviceController.h
+│           └── DeviceController.cpp
+├── web/
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
 ├── hardware/
 ├── docs/
 └── tests/
 ```
 
-Las carpetas se incorporarán conforme se necesiten; Git no conserva directorios vacíos.
+The firmware files are grouped in one Arduino IDE sketch folder. The `.ino` filename matches the sketch folder name. The `.h` and `.cpp` module files are kept next to the sketch initially to make them easy to open as IDE tabs. The `web/` directory contains the website assets that will later be copied to the microSD card.
 
-## Plan de desarrollo
+Directories will be added as needed; Git does not track empty directories.
 
-1. **Preparación:** documentar el proyecto y mantener el repositorio ordenado.
-2. **Validación USB:** comprobar qué capacidades USB HID admite la placa y realizar una prueba local, visible e iniciada mediante una acción física.
-3. **Entrada controlada:** implementar una demostración limitada y documentada, con activación explícita.
-4. **Interfaz inalámbrica:** desarrollar y probar la interfaz web local de manera independiente.
-5. **Integración:** definir cómo se comunican las funciones y validar los límites de seguridad.
-6. **Documentación:** registrar configuración, resultados, limitaciones y pasos para reproducir las pruebas.
+## Planned Module Responsibilities
 
-## Principios de seguridad
+- **`AppConfig.h`:** shared compile-time settings such as the HTTP port and web asset paths.
+- **`NetworkManager`:** manages the local Wi-Fi access point using the board's supported networking library.
+- **`HttpServer`:** handles browser requests and sends HTTP responses.
+- **`StorageManager`:** initializes the microSD card and reads web assets. This module will be implemented when the card module is available.
+- **`DeviceController`:** keeps future device-control logic separate from networking and HTTP handling.
 
-- Probar únicamente en equipos propios o con autorización explícita.
-- No ejecutar acciones de entrada ocultas, persistentes o no consentidas.
-- No recopilar ni transmitir credenciales o datos privados.
-- Mantener las pruebas acotadas, visibles y fáciles de detener.
-- No exponer la interfaz de administración a redes externas sin un diseño de seguridad revisado.
+## Development Plan
 
-## Desarrollo
+1. **Setup:** Document the project and keep the repository organized.
+2. **Firmware skeleton:** Create the sketch and configuration file, then confirm the project structure.
+3. **Wireless interface:** Implement and validate the local Wi-Fi access point.
+4. **Web server:** Serve a basic page and a status endpoint before adding microSD support.
+5. **MicroSD storage:** Read `index.html`, `styles.css`, and `app.js` from the card.
+6. **USB validation:** Check which USB HID capabilities the board supports and run a local test that is visible and initiated by a physical action.
+7. **Integration and documentation:** Validate security boundaries and record results, limitations, and reproducible testing steps.
 
-El firmware se desarrollará con el Arduino IDE. Antes de añadir bibliotecas o fijar una arquitectura definitiva, se verificará la compatibilidad con el Arduino UNO R4 WiFi y se documentarán las versiones utilizadas.
+## Security Principles
 
-## Estado actual
+- Test only on your own devices or with explicit authorization.
+- Do not perform hidden, persistent, or non-consensual input actions.
+- Do not collect or transmit credentials or private data.
+- Keep tests limited in scope, visible, and easy to stop.
+- Do not expose the administration interface to external networks without a reviewed security design.
 
-- [x] Repositorio Git inicializado.
-- [x] README inicial.
-- [ ] Validación de USB HID en la placa.
-- [ ] Primera prueba de firmware documentada.
-- [ ] Interfaz web local documentada.
-- [ ] Pruebas y esquemas de hardware.
+## Development Environment
 
-## Licencia
+Firmware will be developed using the Arduino IDE. The wireless functionality will use the `WiFiS3` library supplied by the Arduino UNO R4 board package. Library and board-core versions will be documented after the first local compile.
 
-La licencia del proyecto está pendiente de definir.
+## Current Status
+
+- [x] Git repository initialized.
+- [x] README translated to English.
+- [ ] Firmware skeleton created.
+- [ ] Wi-Fi access point validated on the board.
+- [ ] Local HTTP server validated.
+- [ ] microSD integration validated.
+- [ ] USB HID functionality validated on the board.
+- [ ] Hardware tests and wiring diagrams added.
+
+## License
+
+The project license has not yet been defined.
