@@ -7,16 +7,20 @@
 /**
  * @brief Encapsulates USB HID keyboard functionality for DaemonHID.
  *
- * This first implementation intentionally exposes only a fixed, harmless
- * demonstration string. It does not accept arbitrary text or key sequences.
+ * The initial implementation exposes only a fixed demonstration string.
+ * It does not accept arbitrary text or key sequences.
  */
 class HidManager {
 public:
     void begin();
-    bool sendDemoText();
+    bool requestDemoText();
+    void update();
+    bool isPending() const;
 
 private:
     bool initialized = false;
+    bool pending = false;
+    uint32_t sendAt = 0;
 };
 
 #endif
