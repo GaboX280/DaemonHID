@@ -1,41 +1,61 @@
-
 #include <WiFiS3.h>
 #include "AppConfig.h"
 #include "NetworkManager.h"
 #include "HttpServer.h"
+#include "HidManager.h"
 
 NetworkManager networkManager;
 HttpServer httpServer;
+HidManager hidManager;
 
 void setup() {
-    Serial.begin(115200);
+    // The UNO R4 WiFi USB HID stack uses SerialUSB for serial monitoring.
+    SerialUSB.begin(115200);
 
-    Serial.println();
-    Serial.println("DaemonHID starting...");
-    Serial.print("Firmware version: ");
-    Serial.println(AppConfig::FIRMWARE_VERSION);
+    hidManager.begin();
 
-    Serial.println("Starting Wi-Fi access point...");
+    SerialUSB.println();
+    SerialUSB.println("DaemonHID starting...");
+    SerialUSB.print("Firmware version: ");
+    SerialUSB.println(AppConfig::FIRMWARE_VERSION);
+    SerialUSB.println("USB HID module initialized.");
+    SerialUSB.println("For a safe test, focus a plain-text editor,");
+    SerialUSB.println("then enter H in Serial Monitor and switch to the editor within 5 seconds.");
+
+    SerialUSB.println("Starting Wi-Fi access point...");
 
     if (networkManager.beginAccessPoint()) {
-        Serial.println("Access point started successfully!");
+        SerialUSB.println("Access point started successfully!");
 
-        Serial.print("Network name: ");
-        Serial.println(AppConfig::AP_SSID);
+        SerialUSB.print("Network name: ");
+        SerialUSB.println(AppConfig::AP_SSID);
 
-        Serial.print("IP address: ");
-        Serial.println(WiFi.localIP());
+        SerialUSB.print("IP address: ");
+        SerialUSB.println(WiFi.localIP());
 
         if (httpServer.begin()) {
-            Serial.println("HTTP server started successfully!");
+            SerialUSB.println("HTTP server started successfully!");
         } else {
-            Serial.println("ERROR: Could not start HTTP server.");
+            SerialUSB.println("ERROR: Could not start HTTP server.");
         }
     } else {
-        Serial.println("ERROR: Could not start access point.");
+        SerialUSB.println("ERROR: Could not start access point.");
     }
 }
 
 void loop() {
     httpServer.handleClient();
+    hidManager.update();
+
+    while (SerialUSB.available() > 0) {
+        const char command = static_cast<char>(SerialUSB.read());
+
+        if (command == 'h' || command == 'H') {
+            if (hidManager.requestDemoText()) {
+                SerialUSB.println("HID test scheduled. Switch to your text editor now.");
+            } else {
+                SerialUSB.println("HID test is unavailable or already pending.");
+            }
+        }
+    }
 }
