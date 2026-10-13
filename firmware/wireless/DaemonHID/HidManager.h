@@ -5,22 +5,30 @@
 #include <Keyboard.h>
 
 /**
- * @brief Encapsulates USB HID keyboard functionality for DaemonHID.
+ * @brief Encapsulates fixed USB HID proof-of-concept actions.
  *
- * The initial implementation exposes only a fixed demonstration string.
- * It does not accept arbitrary text or key sequences.
+ * Only predefined demonstrations are available; no arbitrary commands
+ * or text are accepted from the serial monitor or network.
  */
 class HidManager {
 public:
     void begin();
     bool requestDemoText();
+    bool requestPingDemo();
     void update();
     bool isPending() const;
 
 private:
+    enum class DemoType {
+        None,
+        Text,
+        Ping
+    };
+
     bool initialized = false;
     bool pending = false;
     uint32_t sendAt = 0;
+    DemoType currentDemo = DemoType::None;
 };
 
 #endif
