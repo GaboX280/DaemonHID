@@ -1,7 +1,7 @@
-
 #include "HidManager.h"
 
 void HidManager::begin() {
+    // Allow the UNO R4 WiFi USB interface to settle before HID use.
     delay(500);
 
     Keyboard.begin();
@@ -34,28 +34,27 @@ bool HidManager::requestPingDemo() {
 }
 
 void HidManager::update() {
-    if (!pending ||
-        static_cast<int32_t>(millis() - sendAt) < 0) {
+    if (!pending || static_cast<int32_t>(millis() - sendAt) < 0) {
         return;
     }
 
     if (currentDemo == DemoType::Text) {
+        // Fixed demonstration text only.
         Keyboard.print("DaemonHID HID test - authorized test");
         Keyboard.releaseAll();
     } else if (currentDemo == DemoType::Ping) {
-        // Open Windows Run dialog.
+        // Fixed, non-elevated Windows connectivity demonstration.
+        // Keep the test desktop focused and free of unsaved work.
         Keyboard.press(KEY_LEFT_GUI);
         Keyboard.press('r');
         delay(100);
         Keyboard.releaseAll();
 
-        // Open a standard, non-elevated CMD window.
         delay(800);
         Keyboard.print("cmd");
         Keyboard.press(KEY_RETURN);
         Keyboard.releaseAll();
 
-        // Execute a fixed connectivity test.
         delay(1200);
         Keyboard.print("ping 8.8.8.8");
         Keyboard.press(KEY_RETURN);
@@ -69,4 +68,3 @@ void HidManager::update() {
 bool HidManager::isPending() const {
     return pending;
 }
-

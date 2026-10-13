@@ -1,10 +1,15 @@
-
 #ifndef DAEMONHID_HID_MANAGER_H
 #define DAEMONHID_HID_MANAGER_H
 
 #include <Arduino.h>
 #include <Keyboard.h>
 
+/**
+ * @brief Encapsulates fixed USB HID proof-of-concept actions.
+ *
+ * Only predefined demonstrations are available; no arbitrary commands
+ * or text are accepted from the serial monitor or network.
+ */
 class HidManager {
 public:
     void begin();
