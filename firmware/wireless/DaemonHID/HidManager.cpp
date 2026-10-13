@@ -6,14 +6,28 @@ void HidManager::begin() {
     initialized = true;
 }
 
-bool HidManager::sendDemoText() {
-    if (!initialized) {
+bool HidManager::requestDemoText() {
+    if (!initialized || pending) {
         return false;
     }
 
-    // Fixed test payload: type only into the currently focused text field.
+    // Give the user five seconds to focus a plain-text editor.
+    sendAt = millis() + 5000;
+    pending = true;
+    return true;
+}
+
+void HidManager::update() {
+    if (!pending || static_cast<int32_t>(millis() - sendAt) < 0) {
+        return;
+    }
+
+    // Fixed test string only; never execute arbitrary received commands.
     Keyboard.print("DaemonHID HID test - authorized test");
     Keyboard.releaseAll();
+    pending = false;
+}
 
-    return true;
+bool HidManager::isPending() const {
+    return pending;
 }
