@@ -1,101 +1,116 @@
 # DaemonHID
 
-**DaemonHID** is an educational hardware and firmware project based on the **Arduino UNO R4 WiFi**. Its goal is to explore the interaction between physical hardware, local wireless connectivity, and USB input capabilities, with an emphasis on learning, security, and controlled testing.
+**DaemonHID** is an educational hardware and firmware project built around the **Arduino UNO R4 WiFi**. It explores modular C++ firmware, a local Wi-Fi access point, a lightweight HTTP page, and explicitly triggered USB HID demonstrations for controlled testing on the owner's own computer.
 
-> **Status:** Early development. Features described as future work have not yet been implemented or validated.
+> **Current status:** The first hardware milestone is working. The firmware has been compiled and uploaded to an Arduino UNO R4 WiFi. The startup messages, USB HID demonstrations (`H` and `P`), Wi-Fi access point, and local web page have been tested on the physical board. MicroSD-hosted web assets and OLED support are future work.
 
-## Goals
+## Current Features
 
-- Study the capabilities and limitations of the Arduino UNO R4 WiFi.
-- Develop a local web interface using the board's Wi-Fi access point.
-- Investigate the board's compatibility with USB HID features and first validate a minimal proof of concept.
-- Document wiring, design decisions, and reproducible results.
-- Include physical controls and clear safeguards so input functions are activated intentionally.
+- **USB HID text demonstration (`H`):** after a five-second countdown, types a fixed test string into the focused application.
+- **USB HID ping demonstration (`P`):** after a five-second countdown, sends the Windows shortcut to open Run, launches Command Prompt, and types `ping 8.8.8.8`.
+- **Serial help (`?`):** prints the available commands in the Serial Monitor.
+- **Wi-Fi access point:** creates a local wireless network named `DaemonHID`.
+- **Local HTTP server:** serves a simple HTML status page at `http://192.168.4.1` when connected to the access point.
+- **Modular firmware:** network management, HTTP handling, configuration, and HID demonstrations are separated into C++ modules.
 
-## Hardware
+These are fixed proof-of-concept demonstrations. The firmware does not accept arbitrary text or commands from the serial interface or web page. The web page currently does not trigger HID actions.
 
-- Arduino UNO R4 WiFi.
-- Compatible USB data cable.
-- MicroSD card module (planned; not yet available).
-- Additional components from the starter kit, depending on each test.
+## Hardware and Development Environment
 
-HID functionality depends on the hardware, Arduino core, and compatible libraries. Support for a feature must not be assumed until it has been verified on the actual board.
+- Arduino UNO R4 WiFi
+- USB data cable
+- Computer running Windows for the tested `P` demonstration
+- Arduino IDE
+- Arduino UNO R4 board package, including `WiFiS3` and the board-compatible `Keyboard` library
+
+Planned hardware additions:
+- MicroSD module/card for external web assets
+- OLED display for device and network status
+
+The additional hardware above is **not yet integrated**.
 
 ## Repository Structure
 
-The initial layout separates firmware, web assets, hardware references, and documentation:
+The current sketch is located in `firmware/wireless/DaemonHID/`:
 
 ```text
 DaemonHID/
 ├── README.md
-├── .gitignore
-├── firmware/
-│   └── wireless/
-│       └── DaemonHID/
-│           ├── DaemonHID.ino
-│           ├── AppConfig.h
-│           ├── NetworkManager.h
-│           ├── NetworkManager.cpp
-│           ├── HttpServer.h
-│           ├── HttpServer.cpp
-│           ├── StorageManager.h
-│           ├── StorageManager.cpp
-│           ├── DeviceController.h
-│           └── DeviceController.cpp
-├── web/
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
-├── hardware/
-├── docs/
-└── tests/
+└── firmware/
+    └── wireless/
+        └── DaemonHID/
+            ├── DaemonHID.ino
+            ├── AppConfig.h
+            ├── NetworkManager.h
+            ├── NetworkManager.cpp
+            ├── HttpServer.h
+            ├── HttpServer.cpp
+            ├── HidManager.h
+            └── HidManager.cpp
 ```
 
-The firmware files are grouped in one Arduino IDE sketch folder. The `.ino` filename matches the sketch folder name. The `.h` and `.cpp` module files are kept next to the sketch initially to make them easy to open as IDE tabs. The `web/` directory contains the website assets that will later be copied to the microSD card.
+### Module responsibilities
 
-Directories will be added as needed; Git does not track empty directories.
+| File | Responsibility |
+| --- | --- |
+| `DaemonHID.ino` | Initializes modules, prints serial help, and dispatches `H`, `P`, and `?` commands. |
+| `AppConfig.h` | Stores firmware version, HTTP port, access-point name, channel, and local configuration. |
+| `NetworkManager.h/.cpp` | Starts the Wi-Fi access point. |
+| `HttpServer.h/.cpp` | Accepts local HTTP requests and currently serves an HTML page embedded in the C++ implementation. |
+| `HidManager.h/.cpp` | Runs the fixed USB HID text and ping demonstrations after a countdown. |
 
-## Planned Module Responsibilities
+## Getting Started
 
-- **`AppConfig.h`:** shared compile-time settings such as the HTTP port and web asset paths.
-- **`NetworkManager`:** manages the local Wi-Fi access point using the board's supported networking library.
-- **`HttpServer`:** handles browser requests and sends HTTP responses.
-- **`StorageManager`:** initializes the microSD card and reads web assets. This module will be implemented when the card module is available.
-- **`DeviceController`:** keeps future device-control logic separate from networking and HTTP handling.
+1. Install the Arduino IDE and the Arduino UNO R4 board package.
+2. Open `firmware/wireless/DaemonHID/DaemonHID.ino`. Keep the sketch folder and the accompanying `.h` and `.cpp` files together.
+3. Select **Arduino UNO R4 WiFi** and the port corresponding to the board.
+4. Compile and upload the sketch.
+5. Open the Serial Monitor at **115200 baud**.
+6. Wait for the startup messages. The firmware reports the access-point name and IP address.
 
-## Development Plan
+### Serial commands
 
-1. **Setup:** Document the project and keep the repository organized.
-2. **Firmware skeleton:** Create the sketch and configuration file, then confirm the project structure.
-3. **Wireless interface:** Implement and validate the local Wi-Fi access point.
-4. **Web server:** Serve a basic page and a status endpoint before adding microSD support.
-5. **MicroSD storage:** Read `index.html`, `styles.css`, and `app.js` from the card.
-6. **USB validation:** Check which USB HID capabilities the board supports and run a local test that is visible and initiated by a physical action.
-7. **Integration and documentation:** Validate security boundaries and record results, limitations, and reproducible testing steps.
+| Command | Action |
+| --- | --- |
+| `H` | Schedules the fixed text demonstration after five seconds. Focus a plain-text editor before the countdown ends. |
+| `P` | Schedules the fixed Windows ping demonstration after five seconds. Use only your own unlocked test PC and save open work first. |
+| `?` | Prints the command help. |
 
-## Security Principles
+For the web interface, connect your computer to the `DaemonHID` access point and open **http://192.168.4.1** in a browser. The local access point does not itself provide Internet access; this page is hosted by the board.
 
-- Test only on your own devices or with explicit authorization.
-- Do not perform hidden, persistent, or non-consensual input actions.
-- Do not collect or transmit credentials or private data.
-- Keep tests limited in scope, visible, and easy to stop.
-- Do not expose the administration interface to external networks without a reviewed security design.
+## Validation Status
 
-## Development Environment
+The following results have been reported from tests on the physical Arduino UNO R4 WiFi:
 
-Firmware will be developed using the Arduino IDE. The wireless functionality will use the `WiFiS3` library supplied by the Arduino UNO R4 board package. Library and board-core versions will be documented after the first local compile.
+- [x] Firmware compiled and uploaded with Arduino IDE.
+- [x] Startup messages appear in the Serial Monitor.
+- [x] `H` types the fixed test text.
+- [x] `P` opens Command Prompt and runs `ping 8.8.8.8`.
+- [x] The `DaemonHID` Wi-Fi network is visible.
+- [x] The local page loads at `http://192.168.4.1`.
+- [ ] Serve HTML, CSS, and JavaScript from a microSD card.
+- [ ] Add an OLED status display.
+- [ ] Add automated or repeatable regression tests for the integrated features.
+- [ ] Add wiring diagrams and document the exact board package/library versions.
 
-## Current Status
+## Roadmap
 
-- [x] Git repository initialized.
-- [x] README translated to English.
-- [ ] Firmware skeleton created.
-- [ ] Wi-Fi access point validated on the board.
-- [ ] Local HTTP server validated.
-- [ ] microSD integration validated.
-- [ ] USB HID functionality validated on the board.
-- [ ] Hardware tests and wiring diagrams added.
+1. Improve HTTP request handling, including a bounded client wait, and review error reporting.
+2. Move the page into separate HTML, CSS, and JavaScript files.
+3. Implement and validate microSD storage before serving external assets.
+4. Add an OLED display for basic device and network status.
+5. Expand test notes and document hardware/library versions.
+6. Review the security model before adding any control actions to the web interface.
+
+## Security and Safety
+
+- Use HID demonstrations only on computers you own or are explicitly authorized to test.
+- Save open work and focus the intended target application before triggering a demonstration.
+- Keep actions fixed, visible, and initiated deliberately.
+- Do not add hidden input, persistence, credential collection, or arbitrary command execution.
+- Do not expose the local interface to other networks without a reviewed security design.
+- Keep Wi-Fi credentials out of documentation and public commits. If an access-point password has been committed to a public repository, rotate it and move future secrets out of tracked source files.
 
 ## License
 
-The project license has not yet been defined.
+No project license has been defined yet.
