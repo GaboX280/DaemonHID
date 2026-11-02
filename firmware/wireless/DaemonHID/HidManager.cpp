@@ -1,14 +1,15 @@
+
 #include "HidManager.h"
 
 void HidManager::begin() {
-    // Allow the UNO R4 WiFi USB interface to settle before HID use.
+    // Espera a que la interfaz USB del UNO R4 WiFi esté lista.
     delay(500);
 
     Keyboard.begin();
     Keyboard.releaseAll();
 
     initialized = true;
-    SerialUSB.println("HID initialized successfully.");
+    SerialUSB.println("HID inicializado correctamente.");
 }
 
 bool HidManager::requestDemoText() {
@@ -16,9 +17,12 @@ bool HidManager::requestDemoText() {
         return false;
     }
 
+    // Programa el envío del texto dentro de cinco segundos.
     currentDemo = DemoType::Text;
     sendAt = millis() + 5000;
+    step = DemoStep::None;
     pending = true;
+
     return true;
 }
 
@@ -27,42 +31,78 @@ bool HidManager::requestPingDemo() {
         return false;
     }
 
+    // Programa la demostración de conectividad dentro de cinco segundos.
     currentDemo = DemoType::Ping;
     sendAt = millis() + 5000;
+    step = DemoStep::None;
     pending = true;
+
     return true;
 }
 
 void HidManager::update() {
+    // Comprueba si hay una demostración pendiente y si llegó el momento
+    // de ejecutar el siguiente paso.
     if (!pending || static_cast<int32_t>(millis() - sendAt) < 0) {
         return;
     }
 
     if (currentDemo == DemoType::Text) {
-        // Fixed demonstration text only.
+        // Envía únicamente el texto fijo de demostración.
         Keyboard.print("DaemonHID HID test - authorized test");
         Keyboard.releaseAll();
-    } else if (currentDemo == DemoType::Ping) {
-        // Fixed, non-elevated Windows connectivity demonstration.
-        // Keep the test desktop focused and free of unsaved work.
-        Keyboard.press(KEY_LEFT_GUI);
-        Keyboard.press('r');
-        delay(100);
-        Keyboard.releaseAll();
 
-        delay(800);
-        Keyboard.print("cmd");
-        Keyboard.press(KEY_RETURN);
-        Keyboard.releaseAll();
-
-        delay(1200);
-        Keyboard.print("ping 8.8.8.8");
-        Keyboard.press(KEY_RETURN);
-        Keyboard.releaseAll();
+        currentDemo = DemoType::None;
+        pending = false;
+        step = DemoStep::None;
+        return;
     }
 
-    currentDemo = DemoType::None;
-    pending = false;
+    if (currentDemo != DemoType::Ping) {
+        return;
+    }
+
+    // Ejecuta la demostración de ping mediante pasos no bloqueantes.
+    switch (step) {
+        case DemoStep::None:
+            // Abre la ventana Ejecutar de Windows.
+            Keyboard.press(KEY_LEFT_GUI);
+            Keyboard.press('r');
+
+            step = DemoStep::ReleaseRun;
+            sendAt = millis() + 100;
+            break;
+
+        case DemoStep::ReleaseRun:
+            // Libera las teclas y espera a que aparezca la ventana.
+            Keyboard.releaseAll();
+
+            step = DemoStep::LaunchCmd;
+            sendAt = millis() + 800;
+            break;
+
+        case DemoStep::LaunchCmd:
+            // Escribe CMD y confirma la ejecución.
+            Keyboard.print("cmd");
+            Keyboard.press(KEY_RETURN);
+            Keyboard.releaseAll();
+
+            step = DemoStep::SendPing;
+            sendAt = millis() + 1200;
+            break;
+
+        case DemoStep::SendPing:
+            // Ejecuta una prueba de conectividad hacia 8.8.8.8.
+            Keyboard.print("ping 8.8.8.8");
+            Keyboard.press(KEY_RETURN);
+            Keyboard.releaseAll();
+
+            // Finaliza la demostración y libera el estado interno.
+            currentDemo = DemoType::None;
+            pending = false;
+            step = DemoStep::None;
+            break;
+    }
 }
 
 bool HidManager::isPending() const {
