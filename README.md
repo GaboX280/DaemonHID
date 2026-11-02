@@ -1,116 +1,139 @@
 # DaemonHID
 
-**DaemonHID** is an educational hardware and firmware project built around the **Arduino UNO R4 WiFi**. It explores modular C++ firmware, a local Wi-Fi access point, a lightweight HTTP page, and explicitly triggered USB HID demonstrations for controlled testing on the owner's own computer.
+**DaemonHID** is an educational hardware and firmware project built around the **Arduino UNO R4 WiFi**. It combines USB HID demonstrations, a standalone Wi-Fi access point, a lightweight HTTP status page, and a modular architecture designed for progressive integration of physical peripherals.
 
-> **Current status:** The first hardware milestone is working. The firmware has been compiled and uploaded to an Arduino UNO R4 WiFi. The startup messages, USB HID demonstrations (`H` and `P`), Wi-Fi access point, and local web page have been tested on the physical board. MicroSD-hosted web assets and OLED support are future work.
+The project is developed in C++ using the Arduino framework. Its modules separate network, HTTP, HID, display, storage, and joystick responsibilities.
 
-## Current Features
+> **Current status:** The core firmware has been compiled for the Arduino UNO R4 WiFi. The main hardware functions (USB HID demonstrations, Wi-Fi access point, and local HTTP page) have previously been validated on the physical board. The TFT display, microSD reader, and joystick modules are present in the codebase but are disabled by default while their physical integration is pending.
 
-- **USB HID text demonstration (`H`):** after a five-second countdown, types a fixed test string into the focused application.
-- **USB HID ping demonstration (`P`):** after a five-second countdown, sends the Windows shortcut to open Run, launches Command Prompt, and types `ping 8.8.8.8`.
-- **Serial help (`?`):** prints the available commands in the Serial Monitor.
-- **Wi-Fi access point:** creates a local wireless network named `DaemonHID`.
-- **Local HTTP server:** serves a simple HTML status page at `http://192.168.4.1` when connected to the access point.
-- **Modular firmware:** network management, HTTP handling, configuration, and HID demonstrations are separated into C++ modules.
+## Features
 
-These are fixed proof-of-concept demonstrations. The firmware does not accept arbitrary text or commands from the serial interface or web page. The web page currently does not trigger HID actions.
+### Core functions
+- **USB HID text demonstration (H):** schedules a fixed test string to be typed after a five-second countdown.
+- **USB HID ping demonstration (P):** schedules the Windows + R shortcut, opens Command Prompt, and types ping 8.8.8.8 after a five-second countdown. The command runs on the connected host computer, not on the Arduino.
+- **Serial help (?):** displays the available commands in the Serial Monitor.
+- **Wi-Fi access point:** creates a local wireless network named DaemonHID.
+- **HTTP server:** serves a basic HTML status page at http://192.168.4.1 when a device is connected to the access point.
 
-## Hardware and Development Environment
+### Peripheral modules in the firmware
+- **DisplayManager:** controls a 1.44-inch ST7735 TFT display.
+- **StorageManager:** provides microSD initialization and basic file operations (write, append, read, check existence, and delete).
+- **JoystickManager:** reads the analog X/Y axes and button, and exposes directional input.
 
+The display, storage, and joystick modules are currently disabled in the integrated sketch through the ENABLE_DISPLAY, ENABLE_STORAGE, and ENABLE_JOYSTICK configuration constants. Their physical operation has not yet been validated as part of the integrated device.
+
+The HTTP page is currently informational: it does not trigger HID actions or provide a full device-control interface. The firmware does not accept arbitrary text or commands from the web page or serial interface.
+
+## Hardware
+### Main board
 - Arduino UNO R4 WiFi
 - USB data cable
-- Computer running Windows for the tested `P` demonstration
+- Host computer (Windows is required for the documented P demonstration)
+
+### Peripherals planned for integration
+- 1.44-inch ST7735 TFT display
+- MicroSD module and card
+- Analog joystick module
+
+The peripheral modules are represented in firmware, but their wiring and physical integration must be verified before enabling them.
+
+## Development environment
 - Arduino IDE
-- Arduino UNO R4 board package, including `WiFiS3` and the board-compatible `Keyboard` library
+- Arduino UNO R4 board package
+- WiFiS3 (included with the board platform)
+- Board-compatible Keyboard library
+- Adafruit GFX Library
+- Adafruit ST7735 and ST7789 Library
+- SD library available through the Arduino platform
 
-Planned hardware additions:
-- MicroSD module/card for external web assets
-- OLED display for device and network status
+## Repository structure
+The firmware sketch is located in firmware/wireless/DaemonHID/.
 
-The additional hardware above is **not yet integrated**.
+    DaemonHID/
+    ├── README.md
+    └── firmware/
+        └── wireless/
+            └── DaemonHID/
+                ├── DaemonHID.ino
+                ├── AppConfig.h
+                ├── NetworkManager.h / .cpp
+                ├── HttpServer.h / .cpp
+                ├── HidManager.h / .cpp
+                ├── DisplayManager.h / .cpp
+                ├── StorageManager.h / .cpp
+                └── JoystickManager.h / .cpp
 
-## Repository Structure
-
-The current sketch is located in `firmware/wireless/DaemonHID/`:
-
-```text
-DaemonHID/
-├── README.md
-└── firmware/
-    └── wireless/
-        └── DaemonHID/
-            ├── DaemonHID.ino
-            ├── AppConfig.h
-            ├── NetworkManager.h
-            ├── NetworkManager.cpp
-            ├── HttpServer.h
-            ├── HttpServer.cpp
-            ├── HidManager.h
-            └── HidManager.cpp
-```
-
-### Module responsibilities
-
-| File | Responsibility |
+## Firmware architecture
+| Module | Responsibility |
 | --- | --- |
-| `DaemonHID.ino` | Initializes modules, prints serial help, and dispatches `H`, `P`, and `?` commands. |
-| `AppConfig.h` | Stores firmware version, HTTP port, access-point name, channel, and local configuration. |
-| `NetworkManager.h/.cpp` | Starts the Wi-Fi access point. |
-| `HttpServer.h/.cpp` | Accepts local HTTP requests and currently serves an HTML page embedded in the C++ implementation. |
-| `HidManager.h/.cpp` | Runs the fixed USB HID text and ping demonstrations after a countdown. |
+| DaemonHID.ino | Coordinates initialization, the main loop, serial commands, and module updates. |
+| AppConfig.h | Centralizes firmware version and network configuration. |
+| NetworkManager | Creates and configures the Wi-Fi access point. |
+| HttpServer | Starts the HTTP server and handles incoming client requests. |
+| HidManager | Schedules and updates the fixed USB HID demonstrations. |
+| DisplayManager | Initializes and controls the ST7735 TFT display. |
+| StorageManager | Manages microSD initialization and file operations. |
+| JoystickManager | Reads joystick axes and button input, including direction and press events. |
 
-## Getting Started
+Peripheral activation is controlled in DaemonHID.ino. The three ENABLE_* options are false by default. Keep them disabled until the corresponding hardware connections have been checked and the modules have been tested on the physical board.
 
+## Getting started
 1. Install the Arduino IDE and the Arduino UNO R4 board package.
-2. Open `firmware/wireless/DaemonHID/DaemonHID.ino`. Keep the sketch folder and the accompanying `.h` and `.cpp` files together.
-3. Select **Arduino UNO R4 WiFi** and the port corresponding to the board.
+2. Open firmware/wireless/DaemonHID/DaemonHID.ino. Keep all accompanying header and source files in the same sketch folder.
+3. Select **Arduino UNO R4 WiFi** and the serial port associated with the board.
 4. Compile and upload the sketch.
 5. Open the Serial Monitor at **115200 baud**.
-6. Wait for the startup messages. The firmware reports the access-point name and IP address.
+6. Wait for the startup messages. The firmware reports the access-point status and IP address.
 
 ### Serial commands
-
 | Command | Action |
 | --- | --- |
-| `H` | Schedules the fixed text demonstration after five seconds. Focus a plain-text editor before the countdown ends. |
-| `P` | Schedules the fixed Windows ping demonstration after five seconds. Use only your own unlocked test PC and save open work first. |
-| `?` | Prints the command help. |
+| H | Schedules the fixed text demonstration. Focus a plain-text editor before the five-second countdown ends. |
+| P | Schedules the Windows ping demonstration. Use only your own authorized, unlocked test computer and save open work first. |
+| ? | Prints the command help. |
 
-For the web interface, connect your computer to the `DaemonHID` access point and open **http://192.168.4.1** in a browser. The local access point does not itself provide Internet access; this page is hosted by the board.
+### Connecting to the local page
+1. Connect the host computer or mobile device to the DaemonHID Wi-Fi access point.
+2. Open http://192.168.4.1 in a browser.
 
-## Validation Status
+The access point is a local network; it does not provide Internet access by itself. The HTTP page is hosted directly by the Arduino.
 
-The following results have been reported from tests on the physical Arduino UNO R4 WiFi:
+## Build and validation status
+The integrated firmware has been compiled successfully for the Arduino UNO R4 WiFi.
 
-- [x] Firmware compiled and uploaded with Arduino IDE.
-- [x] Startup messages appear in the Serial Monitor.
-- [x] `H` types the fixed test text.
-- [x] `P` opens Command Prompt and runs `ping 8.8.8.8`.
-- [x] The `DaemonHID` Wi-Fi network is visible.
-- [x] The local page loads at `http://192.168.4.1`.
-- [ ] Serve HTML, CSS, and JavaScript from a microSD card.
-- [ ] Add an OLED status display.
-- [ ] Add automated or repeatable regression tests for the integrated features.
-- [ ] Add wiring diagrams and document the exact board package/library versions.
+Latest recorded compilation:
+- Flash usage: **88,400 bytes (33.7%)** of 262,144 bytes.
+- Global memory usage: **11,096 bytes (33.9%)** of 32,768 bytes.
+- Remaining RAM: **21,672 bytes**.
+
+Previously reported physical-board validation for the core functions:
+- [x] Core firmware compiled and uploaded.
+- [x] Startup messages displayed in the Serial Monitor.
+- [x] H types the fixed test text.
+- [x] P opens Command Prompt and types ping 8.8.8.8.
+- [x] The DaemonHID Wi-Fi access point is visible.
+- [x] The local HTTP page loads at http://192.168.4.1.
+- [ ] Physically validate the ST7735 TFT integration.
+- [ ] Physically validate microSD initialization and file operations.
+- [ ] Physically validate joystick readings, direction thresholds, and button behavior.
+- [ ] Add repeatable regression tests and document the final wiring and library versions.
+
+Compilation confirms that the sketch builds for the selected board; it does not, by itself, confirm that the peripheral modules work with the physical hardware.
 
 ## Roadmap
+1. Complete physical integration and validation of the TFT, microSD, and joystick.
+2. Improve HTTP request handling and error reporting.
+3. Separate the HTML, CSS, and JavaScript assets if the web interface is expanded.
+4. Evaluate serving web assets from microSD after storage has been validated.
+5. Add repeatable tests and document final wiring, pin assignments, and library versions.
+6. Review the security model before introducing any remote control functionality.
 
-1. Improve HTTP request handling, including a bounded client wait, and review error reporting.
-2. Move the page into separate HTML, CSS, and JavaScript files.
-3. Implement and validate microSD storage before serving external assets.
-4. Add an OLED display for basic device and network status.
-5. Expand test notes and document hardware/library versions.
-6. Review the security model before adding any control actions to the web interface.
-
-## Security and Safety
-
-- Use HID demonstrations only on computers you own or are explicitly authorized to test.
-- Save open work and focus the intended target application before triggering a demonstration.
-- Keep actions fixed, visible, and initiated deliberately.
-- Do not add hidden input, persistence, credential collection, or arbitrary command execution.
-- Do not expose the local interface to other networks without a reviewed security design.
-- Keep Wi-Fi credentials out of documentation and public commits. If an access-point password has been committed to a public repository, rotate it and move future secrets out of tracked source files.
+## Security and responsible use
+- Run USB HID demonstrations only on computers you own or are explicitly authorized to test.
+- Save open work and focus the intended application before triggering a demonstration.
+- The HID actions are fixed proof-of-concept demonstrations; do not use the device for hidden input, credential collection, persistence, or unauthorized command execution.
+- Keep the access point and HTTP server within a controlled test environment.
+- Do not commit Wi-Fi passwords, tokens, or other secrets to the repository. Store sensitive configuration outside tracked source files and rotate any credential that has been exposed.
 
 ## License
-
 No project license has been defined yet.
