@@ -1,0 +1,8 @@
+REM Consultar estado de seguridad y firewall de Windows
+GUI r
+DELAY 800
+STRING powershell
+ENTER
+DELAY 1200
+STRING Clear-Host; Get-NetFirewallProfile | Select-Object Name, Enabled; Get-NetTCPConnection -State Listen | Select-Object LocalAddress, LocalPort | Select-Object -First 10
+ENTER

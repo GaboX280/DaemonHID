@@ -1,0 +1,16 @@
+REM Demostracion de concienciacion sobre bloqueo de pantalla
+GUI r
+DELAY 800
+STRING notepad
+ENTER
+DELAY 1000
+STRING [ALERTA DE SEGURIDAD - AUDITORIA DE TI]
+ENTER
+STRING Dejaste tu equipo desbloqueado y desatendido.
+ENTER
+STRING Un atacante con acceso fisico USB puede tomar control en 5 segundos.
+ENTER
+STRING Recuerda siempre presionar Win + L al levantarte de tu puesto.
+ENTER
+DELAY 2500
+GUI l

@@ -1,0 +1,11 @@
+REM Diagnostico integral de red en Windows
+GUI r
+DELAY 800
+STRING powershell
+ENTER
+DELAY 1200
+STRING Clear-Host; Write-Host "=== DAEMONHID NET DIAGNOSTIC ===" -ForegroundColor Cyan
+ENTER
+DELAY 300
+STRING ipconfig /flushdns; ping -n 3 8.8.8.8; Get-NetIPAddress -AddressFamily IPv4 | Format-Table InterfaceAlias, IPAddress
+ENTER

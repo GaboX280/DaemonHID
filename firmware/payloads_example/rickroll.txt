@@ -1,0 +1,11 @@
+REM Demo clasica de apertura de URL automatizada
+GUI r
+DELAY 800
+STRING cmd
+ENTER
+DELAY 800
+STRING start https://www.youtube.com/watch?v=dQw4w9WgXcQ
+ENTER
+DELAY 400
+STRING exit
+ENTER

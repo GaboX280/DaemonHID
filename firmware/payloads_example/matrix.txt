@@ -1,0 +1,11 @@
+REM Efecto visual Matrix para exposicion en CMD
+GUI r
+DELAY 800
+STRING cmd
+ENTER
+DELAY 1000
+STRING mode con: cols=80 lines=30 && color 0a && cls
+ENTER
+DELAY 500
+STRING echo off && for /l %i in () do (echo %random% %random% %random% %random% %random% %random% %random%)
+ENTER

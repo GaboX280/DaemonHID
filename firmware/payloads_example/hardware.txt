@@ -1,0 +1,8 @@
+REM Auditoria rapida de especificaciones del equipo
+GUI r
+DELAY 800
+STRING powershell
+ENTER
+DELAY 1200
+STRING Clear-Host; Get-CimInstance Win32_Processor | Select-Object Name; Get-CimInstance Win32_PhysicalMemory | Measure-Object Capacity -Sum | ForEach-Object { "$([math]::round($_.Sum/1GB)) GB RAM" }; Get-PSDrive C | Select-Object Used, Free
+ENTER

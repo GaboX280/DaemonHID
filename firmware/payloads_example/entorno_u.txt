@@ -1,0 +1,11 @@
+REM Apertura automatica de herramientas de estudio
+GUI r
+DELAY 800
+STRING cmd
+ENTER
+DELAY 800
+STRING start https://github.com/GaboX280/DaemonHID && start https://campusvirtual.ufidelitas.ac.cr
+ENTER
+DELAY 400
+STRING exit
+ENTER
