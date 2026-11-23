@@ -1,31 +1,36 @@
-
 #ifndef DAEMONHID_HID_MANAGER_H
 #define DAEMONHID_HID_MANAGER_H
 
 #include <Arduino.h>
 #include <Keyboard.h>
+#include <SD.h>
+
+class StorageManager;
 
 /**
- * @brief Gestiona las demostraciones predefinidas mediante USB HID.
+ * @brief Gestiona las demostraciones y ejecucion de scripts USB HID.
  *
- * Solo permite ejecutar demostraciones previamente definidas.
- * No acepta comandos ni texto arbitrario desde el monitor serial
- * o la red.
+ * Soporta demos integradas y ejecucion asincrona no bloqueante
+ * de archivos de script desde la tarjeta MicroSD.
  */
 class HidManager {
 public:
-    void begin();
+    void begin(StorageManager* storage = nullptr);
+    void setStorageManager(StorageManager* storage);
+
     bool requestDemoText();
     bool requestPingDemo();
     bool requestPayloadFile(const char* filename);
     void abort();
     void update();
+
     bool isPending() const;
+    bool isExecuting() const;
     const char* getStateString() const;
     int getCountdownRemaining() const;
+    const char* getActivePayloadName() const;
 
 private:
-    // Identifica el tipo de demostración solicitada.
     enum class DemoType {
         None,
         Text,
@@ -33,23 +38,29 @@ private:
         FilePayload
     };
 
-    // Identifica el paso actual de una demostración.
     enum class DemoStep {
         None,
         ReleaseRun,
         LaunchCmd,
-        SendPing
+        SendPing,
+        ExecutingFile
     };
 
     bool initialized = false;
     bool pending = false;
+    bool executingFile = false;
 
-    // Momento en que debe ejecutarse el siguiente paso.
     uint32_t sendAt = 0;
 
     DemoType currentDemo = DemoType::None;
     DemoStep step = DemoStep::None;
     char targetPayloadFile[32] = "";
+
+    StorageManager* storageMgr = nullptr;
+    File activeFile;
+
+    void processScriptLine(const String& line);
+    void endScript();
 };
 
 #endif

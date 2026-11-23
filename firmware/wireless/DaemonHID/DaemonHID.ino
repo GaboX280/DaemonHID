@@ -79,7 +79,7 @@ void setup() {
     SerialUSB.println();
     SerialUSB.println("[HID] Inicializando interfaz USB HID...");
 
-    hidManager.begin();
+    hidManager.begin(&storageManager);
 
     SerialUSB.println("[HID] Interfaz inicializada.");
 
@@ -222,6 +222,12 @@ void loop() {
 
         if (joystickManager.wasButtonPressed()) {
             SerialUSB.println("[JOYSTICK] Boton presionado.");
+
+            // Failsafe / Parada de emergencia fisica:
+            if (hidManager.isPending() || hidManager.isExecuting()) {
+                hidManager.abort();
+                SerialUSB.println("[JOYSTICK] ALERTA: Accion HID cancelada por boton de emergencia.");
+            }
         }
 
         const JoystickDirection direction =
@@ -292,6 +298,17 @@ void loop() {
                 break;
 
             // -----------------------------------------
+            // PARADA DE EMERGENCIA (ABORTAR)
+            // -----------------------------------------
+
+            case 'x':
+            case 'X':
+
+                hidManager.abort();
+                SerialUSB.println("[HID] Accion cancelada por comando serial.");
+                break;
+
+            // -----------------------------------------
             // AYUDA
             // -----------------------------------------
 
@@ -301,6 +318,7 @@ void loop() {
                 SerialUSB.println("========== AYUDA DAEMONHID ==========");
                 SerialUSB.println("H - Ejecutar prueba de escritura de texto.");
                 SerialUSB.println("P - Abrir CMD y ejecutar ping 8.8.8.8.");
+                SerialUSB.println("X - Parada de emergencia (abortar HID).");
                 SerialUSB.println("? - Mostrar esta ayuda.");
                 SerialUSB.println("=====================================");
 
