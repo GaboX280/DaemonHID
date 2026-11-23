@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DaemonHID - Control Center</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Encabezado -->
+    <header class="header">
+      <div class="logo-group">
+        <div class="status-indicator live" id="connIndicator"></div>
+        <h1>Daemon<span>HID</span></h1>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-outline" id="firmwareVersion">v0.1.0</span>
+        <span class="badge badge-success" id="sdBadge">SD OK</span>
+      </div>
+    </header>
+
+    <!-- Alerta / Barra de Emergencia (Visible durante Countdown/Ejecución) -->
+    <section class="alert-banner hidden" id="alertBanner">
+      <div class="alert-content">
+        <div class="alert-spinner"></div>
+        <div>
+          <div class="alert-title" id="alertTitle">EJECUTANDO DEMOSTRACIÓN</div>
+          <div class="alert-subtitle" id="alertSubtitle">Cuenta regresiva: <span id="countdownTimer">5</span>s</div>
+        </div>
+      </div>
+      <button class="btn btn-danger btn-sm" id="btnAbortBanner">ABORTAR</button>
+    </section>
+
+    <!-- Telemetría en tiempo real -->
+    <section class="grid-telemetry">
+      <div class="card stat-card">
+        <span class="stat-label">ESTADO HID</span>
+        <span class="stat-value highlight" id="statHid">Inactivo</span>
+      </div>
+      <div class="card stat-card">
+        <span class="stat-label">SRAM LIBRE</span>
+        <span class="stat-value" id="statRam">-- KB</span>
+      </div>
+      <div class="card stat-card">
+        <span class="stat-label">TIEMPO ACTIVO</span>
+        <span class="stat-value" id="statUptime">00:00:00</span>
+      </div>
+      <div class="card stat-card">
+        <span class="stat-label">IP LOCAL</span>
+        <span class="stat-value" id="statIp">192.168.4.1</span>
+      </div>
+    </section>
+
+    <!-- Payloads en Tarjeta MicroSD -->
+    <section class="card section-card">
+      <div class="section-header">
+        <h2>Scripts en MicroSD (<code>/payloads/</code>)</h2>
+        <button class="btn btn-secondary btn-sm" id="btnRefreshPayloads">↻ Actualizar</button>
+      </div>
+      <div id="payloadList" class="payload-list">
+        <div class="empty-state">Buscando archivos en la tarjeta MicroSD...</div>
+      </div>
+    </section>
+
+    <!-- Disparadores Directos / Pruebas fijas -->
+    <section class="card section-card">
+      <div class="section-header">
+        <h2>Pruebas de Conectividad Base</h2>
+      </div>
+      <div class="quick-actions">
+        <button class="btn btn-primary" id="btnDemoText">
+          <strong>Prueba de Escritura (H)</strong>
+          <small>Escribe texto de prueba tras 5s</small>
+        </button>
+        <button class="btn btn-primary" id="btnDemoPing">
+          <strong>Diagnóstico CMD Ping (P)</strong>
+          <small>Abre terminal y ejecuta ping 8.8.8.8</small>
+        </button>
+        <button class="btn btn-danger" id="btnAbortGlobal">
+          <strong>Parada de Emergencia</strong>
+          <small>Cancela cualquier comando y libera teclas</small>
+        </button>
+      </div>
+    </section>
+
+    <!-- Pie de página -->
+    <footer class="footer">
+      <p>DaemonHID · Microprocesadores SC-205 · Universidad Fidélitas</p>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="app.js"></script>
+</body>
+</html>

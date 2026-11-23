@@ -1,0 +1,16 @@
+REM Abrir bloc de notas y escribir reporte
+GUI r
+DELAY 800
+STRING notepad
+ENTER
+DELAY 1000
+STRING ========================================
+ENTER
+STRING   DAEMONHID - REPORTE DE CONECTIVIDAD
+ENTER
+STRING ========================================
+ENTER
+STRING Estado: Dispositivo USB-HID operando correctamente.
+ENTER
+STRING Red: Conectado a DaemonHID AP (192.168.4.1).
+ENTER

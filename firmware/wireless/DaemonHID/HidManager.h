@@ -17,15 +17,20 @@ public:
     void begin();
     bool requestDemoText();
     bool requestPingDemo();
+    bool requestPayloadFile(const char* filename);
+    void abort();
     void update();
     bool isPending() const;
+    const char* getStateString() const;
+    int getCountdownRemaining() const;
 
 private:
     // Identifica el tipo de demostración solicitada.
     enum class DemoType {
         None,
         Text,
-        Ping
+        Ping,
+        FilePayload
     };
 
     // Identifica el paso actual de una demostración.
@@ -44,6 +49,7 @@ private:
 
     DemoType currentDemo = DemoType::None;
     DemoStep step = DemoStep::None;
+    char targetPayloadFile[32] = "";
 };
 
 #endif

@@ -15,9 +15,9 @@
 
 // Activar cuando el hardware correspondiente este conectado
 // y se hayan confirmado sus conexiones fisicas.
-constexpr bool ENABLE_DISPLAY = false;
-constexpr bool ENABLE_STORAGE = false;
-constexpr bool ENABLE_JOYSTICK = false;
+constexpr bool ENABLE_DISPLAY = true;
+constexpr bool ENABLE_STORAGE = true;
+constexpr bool ENABLE_JOYSTICK = true;
 
 // Pines provisionales: verificar antes de activar los modulos.
 constexpr uint8_t TFT_CS_PIN = 9;
@@ -185,7 +185,7 @@ void setup() {
     SerialUSB.println();
     SerialUSB.println("[HTTP] Iniciando servidor web...");
 
-    if (httpServer.begin()) {
+    if (httpServer.begin(&storageManager, &hidManager)) {
         httpServerReady = true;
         SerialUSB.println("[HTTP] Servidor iniciado correctamente.");
     } else {

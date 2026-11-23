@@ -108,3 +108,51 @@ void HidManager::update() {
 bool HidManager::isPending() const {
     return pending;
 }
+
+bool HidManager::requestPayloadFile(const char* filename) {
+    if (!initialized || pending || filename == nullptr || filename[0] == '\0') {
+        return false;
+    }
+
+    if (strcmp(filename, "DEMO_TEXT") == 0) {
+        return requestDemoText();
+    }
+    if (strcmp(filename, "DEMO_PING") == 0) {
+        return requestPingDemo();
+    }
+
+    strncpy(targetPayloadFile, filename, sizeof(targetPayloadFile) - 1);
+    targetPayloadFile[sizeof(targetPayloadFile) - 1] = '\0';
+
+    currentDemo = DemoType::FilePayload;
+    sendAt = millis() + 5000;
+    step = DemoStep::None;
+    pending = true;
+
+    SerialUSB.print("[HID] Payload programado: ");
+    SerialUSB.println(targetPayloadFile);
+    return true;
+}
+
+void HidManager::abort() {
+    Keyboard.releaseAll();
+    pending = false;
+    currentDemo = DemoType::None;
+    step = DemoStep::None;
+    targetPayloadFile[0] = '\0';
+    SerialUSB.println("[HID] Demostracion abortada.");
+}
+
+const char* HidManager::getStateString() const {
+    if (!initialized) return "desactivado";
+    if (pending) return "cuenta_regresiva";
+    if (step != DemoStep::None) return "escribiendo";
+    return "inactivo";
+}
+
+int HidManager::getCountdownRemaining() const {
+    if (!pending) return 0;
+    long diff = (long)sendAt - (long)millis();
+    if (diff <= 0) return 0;
+    return (int)((diff + 999) / 1000);
+}

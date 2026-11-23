@@ -123,3 +123,94 @@ bool StorageManager::deleteFile(const char* path) {
 
     return SD.remove(path);
 }
+
+File StorageManager::openFile(const char* path, uint8_t mode) {
+    if (!initialized || path == nullptr) {
+        return File();
+    }
+    return SD.open(path, mode);
+}
+
+bool StorageManager::streamFileToClient(const char* path, WiFiClient& client) {
+    if (!initialized || path == nullptr) {
+        return false;
+    }
+
+    File file = SD.open(path, FILE_READ);
+    if (!file) {
+        return false;
+    }
+
+    // Transmite en bloques fijos para optimizar la SRAM
+    uint8_t buffer[64];
+    while (file.available() && client.connected()) {
+        const int bytesRead = file.read(buffer, sizeof(buffer));
+        if (bytesRead > 0) {
+            client.write(buffer, bytesRead);
+        }
+    }
+
+    file.close();
+    return true;
+}
+
+String StorageManager::getPayloadsAsJson(const char* dirPath) {
+    if (!initialized || dirPath == nullptr) {
+        return "[]";
+    }
+
+    File dir = SD.open(dirPath);
+    if (!dir || !dir.isDirectory()) {
+        if (dir) dir.close();
+        return "[]";
+    }
+
+    String json = "[";
+    bool first = true;
+
+    while (true) {
+        File entry = dir.openNextFile();
+        if (!entry) {
+            break;
+        }
+
+        if (!entry.isDirectory()) {
+            const char* name = entry.name();
+            // Ignorar archivos del sistema y temporales
+            if (name[0] != '.' && name[0] != '_') {
+                if (!first) {
+                    json += ",";
+                }
+                json += "\"";
+                json += name;
+                json += "\"";
+                first = false;
+            }
+        }
+        entry.close();
+    }
+
+    dir.close();
+    json += "]";
+    return json;
+}
+
+const char* StorageManager::getMimeType(const char* path) {
+    if (path == nullptr) {
+        return "text/plain; charset=utf-8";
+    }
+
+    String p = String(path);
+    p.toLowerCase();
+
+    if (p.endsWith(".html") || p.endsWith(".htm")) return "text/html; charset=utf-8";
+    if (p.endsWith(".css")) return "text/css; charset=utf-8";
+    if (p.endsWith(".js")) return "application/javascript; charset=utf-8";
+    if (p.endsWith(".json")) return "application/json; charset=utf-8";
+    if (p.endsWith(".txt")) return "text/plain; charset=utf-8";
+    if (p.endsWith(".ico")) return "image/x-icon";
+    if (p.endsWith(".png")) return "image/png";
+    if (p.endsWith(".svg")) return "image/svg+xml";
+
+    return "text/plain; charset=utf-8";
+}

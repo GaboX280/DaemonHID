@@ -3,12 +3,14 @@
 #define DAEMONHID_STORAGE_MANAGER_H
 
 #include <Arduino.h>
+#include <SD.h>
+#include <WiFiS3.h>
 
 /**
  * @brief Gestiona las operaciones de almacenamiento en microSD.
  *
- * Permite inicializar la tarjeta y realizar operaciones
- * basicas de lectura, escritura y administracion de archivos.
+ * Permite inicializar la tarjeta, listar scripts y transmitir
+ * archivos estaticos directamente hacia clientes web sin saturar la RAM.
  */
 class StorageManager {
 public:
@@ -26,9 +28,6 @@ public:
 
     /**
      * @brief Crea o sobrescribe un archivo.
-     * @param path Ruta del archivo.
-     * @param content Contenido que se almacenara.
-     * @return true si la escritura fue exitosa.
      */
     bool writeFile(const char* path, const char* content);
 
@@ -38,10 +37,7 @@ public:
     bool appendFile(const char* path, const char* content);
 
     /**
-     * @brief Lee el contenido de un archivo.
-     * @param path Ruta del archivo.
-     * @param content Variable donde se guardara el resultado.
-     * @return true si la lectura fue exitosa.
+     * @brief Lee el contenido de un archivo a un String (archivos pequenos).
      */
     bool readFile(const char* path, String& content);
 
@@ -54,6 +50,29 @@ public:
      * @brief Elimina un archivo de la tarjeta.
      */
     bool deleteFile(const char* path);
+
+    /**
+     * @brief Transmite un archivo por bloques directamente a un cliente HTTP.
+     * Evita la fragmentacion de memoria RAM.
+     */
+    bool streamFileToClient(const char* path, WiFiClient& client);
+
+    /**
+     * @brief Obtiene una lista en formato JSON de los archivos en un directorio.
+     * @param dirPath Directorio a escanear (por defecto /payloads).
+     * @return Cadena JSON con el arreglo de nombres de archivos.
+     */
+    String getPayloadsAsJson(const char* dirPath = "/payloads");
+
+    /**
+     * @brief Abre un archivo de la SD.
+     */
+    File openFile(const char* path, uint8_t mode = FILE_READ);
+
+    /**
+     * @brief Determina el tipo MIME segun la extension del archivo.
+     */
+    static const char* getMimeType(const char* path);
 
 private:
     bool initialized = false;

@@ -1,0 +1,4 @@
+REM Demo de escritura basica en editor
+DELAY 1000
+STRING DaemonHID: Prueba de escritura exitosa desde la MicroSD!
+ENTER
