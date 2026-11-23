@@ -195,6 +195,39 @@ String StorageManager::getPayloadsAsJson(const char* dirPath) {
     return json;
 }
 
+int StorageManager::getPayloadFileList(char filenames[][16], int maxFiles) {
+    if (!initialized || filenames == nullptr || maxFiles <= 0) {
+        return 0;
+    }
+
+    File dir = SD.open("/payloads");
+    if (!dir || !dir.isDirectory()) {
+        if (dir) dir.close();
+        return 0;
+    }
+
+    int count = 0;
+    while (count < maxFiles) {
+        File entry = dir.openNextFile();
+        if (!entry) {
+            break;
+        }
+
+        if (!entry.isDirectory()) {
+            const char* name = entry.name();
+            if (name[0] != '.' && name[0] != '_') {
+                strncpy(filenames[count], name, 15);
+                filenames[count][15] = '\0';
+                count++;
+            }
+        }
+        entry.close();
+    }
+
+    dir.close();
+    return count;
+}
+
 const char* StorageManager::getMimeType(const char* path) {
     if (path == nullptr) {
         return "text/plain; charset=utf-8";

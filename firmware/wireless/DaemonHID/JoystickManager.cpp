@@ -1,4 +1,3 @@
-
 #include "JoystickManager.h"
 
 JoystickManager::JoystickManager(
@@ -24,7 +23,10 @@ void JoystickManager::begin() {
     stableButtonState = lastButtonReading;
 
     direction = JoystickDirection::Center;
+    lastNavDirection = JoystickDirection::Center;
     buttonPressedEvent = false;
+    navHoldStartTime = 0;
+    lastRepeatTime = 0;
 }
 
 void JoystickManager::update() {
@@ -32,7 +34,7 @@ void JoystickManager::update() {
     const int xValue = analogRead(pinX);
     const int yValue = analogRead(pinY);
 
-    // Determina la direccion del movimiento.
+    // Determina la direccion del movimiento con histeresis.
     if (xValue < AXIS_LOW_THRESHOLD) {
         direction = JoystickDirection::Left;
     } else if (xValue > AXIS_HIGH_THRESHOLD) {
@@ -80,4 +82,53 @@ bool JoystickManager::wasButtonPressed() {
 
     buttonPressedEvent = false;
     return true;
+}
+
+NavEvent JoystickManager::getNavEvent() {
+    // El botón tiene máxima prioridad
+    if (wasButtonPressed()) {
+        return NavEvent::Click;
+    }
+
+    // Si la palanca está en el centro, reiniciar contadores de repetición
+    if (direction == JoystickDirection::Center) {
+        lastNavDirection = JoystickDirection::Center;
+        navHoldStartTime = 0;
+        return NavEvent::None;
+    }
+
+    const unsigned long now = millis();
+
+    // Nueva pulsación de dirección (flanco ascendente)
+    if (lastNavDirection == JoystickDirection::Center) {
+        lastNavDirection = direction;
+        navHoldStartTime = now;
+        lastRepeatTime = now;
+
+        switch (direction) {
+            case JoystickDirection::Up: return NavEvent::Up;
+            case JoystickDirection::Down: return NavEvent::Down;
+            case JoystickDirection::Left: return NavEvent::Left;
+            case JoystickDirection::Right: return NavEvent::Right;
+            default: return NavEvent::None;
+        }
+    }
+
+    // Mantenimiento de la misma dirección con auto-repetición controlada
+    if (direction == lastNavDirection) {
+        if (now - navHoldStartTime >= INITIAL_REPEAT_DELAY_MS) {
+            if (now - lastRepeatTime >= REPEAT_RATE_MS) {
+                lastRepeatTime = now;
+                switch (direction) {
+                    case JoystickDirection::Up: return NavEvent::Up;
+                    case JoystickDirection::Down: return NavEvent::Down;
+                    case JoystickDirection::Left: return NavEvent::Left;
+                    case JoystickDirection::Right: return NavEvent::Right;
+                    default: return NavEvent::None;
+                }
+            }
+        }
+    }
+
+    return NavEvent::None;
 }

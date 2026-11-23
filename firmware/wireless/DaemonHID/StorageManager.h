@@ -65,6 +65,14 @@ public:
     String getPayloadsAsJson(const char* dirPath = "/payloads");
 
     /**
+     * @brief Llena un arreglo estático con nombres de archivos de /payloads.
+     * @param filenames Arreglo destino de cadenas de texto.
+     * @param maxFiles Cantidad máxima de archivos a registrar.
+     * @return Cantidad de archivos encontrados.
+     */
+    int getPayloadFileList(char filenames[][16], int maxFiles);
+
+    /**
      * @brief Abre un archivo de la SD.
      */
     File openFile(const char* path, uint8_t mode = FILE_READ);

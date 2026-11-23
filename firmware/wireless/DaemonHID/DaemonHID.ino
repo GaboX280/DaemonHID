@@ -84,29 +84,6 @@ void setup() {
     SerialUSB.println("[HID] Interfaz inicializada.");
 
     // -------------------------------------------------
-    // PANTALLA TFT
-    // -------------------------------------------------
-
-    SerialUSB.println();
-    SerialUSB.println("[DISPLAY] Inicializando pantalla TFT...");
-
-    if (ENABLE_DISPLAY) {
-        displayReady = displayManager.begin();
-
-        if (displayReady) {
-            displayManager.showMessage(
-                "DaemonHID\nIniciando...",
-                ST7735_WHITE
-            );
-            SerialUSB.println("[DISPLAY] Inicializacion completada.");
-        } else {
-            SerialUSB.println("[DISPLAY] No se pudo inicializar.");
-        }
-    } else {
-        SerialUSB.println("[DISPLAY] Modulo desactivado.");
-    }
-
-    // -------------------------------------------------
     // ALMACENAMIENTO MICROSD
     // -------------------------------------------------
 
@@ -123,6 +100,25 @@ void setup() {
         }
     } else {
         SerialUSB.println("[STORAGE] Modulo desactivado.");
+    }
+
+    // -------------------------------------------------
+    // PANTALLA TFT
+    // -------------------------------------------------
+
+    SerialUSB.println();
+    SerialUSB.println("[DISPLAY] Inicializando pantalla TFT...");
+
+    if (ENABLE_DISPLAY) {
+        displayReady = displayManager.begin(&storageManager, &hidManager);
+
+        if (displayReady) {
+            SerialUSB.println("[DISPLAY] Interfaz grafica iniciada.");
+        } else {
+            SerialUSB.println("[DISPLAY] No se pudo inicializar.");
+        }
+    } else {
+        SerialUSB.println("[DISPLAY] Modulo desactivado.");
     }
 
     // -------------------------------------------------
@@ -216,26 +212,26 @@ void loop() {
     // Actualiza las demostraciones USB HID.
     hidManager.update();
 
-    // Actualiza el joystick y procesa sus eventos.
+    // Actualiza el joystick y procesa sus eventos de navegacion.
     if (joystickReady) {
         joystickManager.update();
 
-        if (joystickManager.wasButtonPressed()) {
-            SerialUSB.println("[JOYSTICK] Boton presionado.");
+        const NavEvent navEvent = joystickManager.getNavEvent();
 
-            // Failsafe / Parada de emergencia fisica:
+        if (displayReady) {
+            displayManager.handleNav(navEvent);
+        } else if (navEvent == NavEvent::Click) {
+            // Si la pantalla no está activa pero el joystick sí, el botón sigue actuando de parada de emergencia
             if (hidManager.isPending() || hidManager.isExecuting()) {
                 hidManager.abort();
-                SerialUSB.println("[JOYSTICK] ALERTA: Accion HID cancelada por boton de emergencia.");
+                SerialUSB.println("[JOYSTICK] Accion cancelada por boton de emergencia.");
             }
         }
+    }
 
-        const JoystickDirection direction =
-            joystickManager.getDirection();
-
-        // La lectura de direccion queda disponible
-        // para integrar el menu de navegacion.
-        (void)direction;
+    // Actualiza la pantalla TFT (animaciones, countdown, telemetria).
+    if (displayReady) {
+        displayManager.update();
     }
 
     // Procesa los comandos recibidos por USB serial.
