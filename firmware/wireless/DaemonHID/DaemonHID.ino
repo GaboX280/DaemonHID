@@ -166,8 +166,8 @@ void initializeNetworkModule() {
     SerialUSB.println("[NETWORK] Punto de acceso iniciado.");
     SerialUSB.print("[NETWORK] SSID: ");
     SerialUSB.println(AppConfig::AP_SSID);
-    SerialUSB.print("[NETWORK] Direccion IP: ");
-    SerialUSB.println(WiFi.localIP());
+    SerialUSB.print("[NETWORK] Direccion IP del SoftAP: ");
+    SerialUSB.println(WiFi.softAPIP());
 }
 
 void initializeHttpServerModule() {
@@ -177,8 +177,18 @@ void initializeHttpServerModule() {
     // Algunos modulos perifericos pueden afectar el arranque si hay un
     // problema electrico. Comprobar el SoftAP antes de iniciar el servidor.
     const uint8_t apStatus = WiFi.status();
-    if (apStatus != WL_AP_LISTENING && apStatus != WL_AP_CONNECTED) {
-        SerialUSB.println("[HTTP] El AP no esta activo despues de iniciar perifericos. Reintentando...");
+    const IPAddress apAddress = WiFi.softAPIP();
+    const bool apHasAddress =
+        apAddress[0] != 0 || apAddress[1] != 0 ||
+        apAddress[2] != 0 || apAddress[3] != 0;
+
+    if ((apStatus != WL_AP_LISTENING && apStatus != WL_AP_CONNECTED) || !apHasAddress) {
+        SerialUSB.println("[HTTP] El AP no esta completamente disponible despues de iniciar perifericos.");
+        SerialUSB.print("[HTTP] Estado Wi-Fi: ");
+        SerialUSB.println(apStatus);
+        SerialUSB.print("[HTTP] IP del SoftAP: ");
+        SerialUSB.println(apAddress);
+        SerialUSB.println("[HTTP] Ejecutando recuperacion del AP...");
         networkReady = networkManager.beginAccessPoint();
     }
 
