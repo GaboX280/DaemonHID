@@ -1,6 +1,7 @@
 #include "NetworkManager.h"
 #include "AppConfig.h"
 #include <WiFiS3.h>
+#include <string.h>
 
 namespace {
     bool isAccessPointActive(uint8_t status) {
