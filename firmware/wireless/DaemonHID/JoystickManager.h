@@ -34,7 +34,7 @@ enum class NavEvent {
 class JoystickManager {
 public:
     JoystickManager(uint8_t pinX, uint8_t pinY, uint8_t pinButton);
-    void begin();
+    bool begin();
     void update();
 
     JoystickDirection getDirection() const;
@@ -45,6 +45,8 @@ private:
     uint8_t pinX;
     uint8_t pinY;
     uint8_t pinButton;
+
+    bool initialized = false;
 
     JoystickDirection direction = JoystickDirection::Center;
     JoystickDirection lastNavDirection = JoystickDirection::Center;
