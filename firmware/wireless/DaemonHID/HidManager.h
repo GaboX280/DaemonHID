@@ -15,7 +15,7 @@ class StorageManager;
  */
 class HidManager {
 public:
-    void begin(StorageManager* storage = nullptr);
+    bool begin(StorageManager* storage = nullptr);
     void setStorageManager(StorageManager* storage);
 
     bool requestDemoText();
