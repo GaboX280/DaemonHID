@@ -255,7 +255,7 @@ void HttpServer::handleStaticFile(
     }
 
     // Evitar traversal y separadores alternativos al construir la ruta FAT.
-    if (path.indexOf("..") >= 0 || path.indexOf('\\\\') >= 0) {
+    if (path.indexOf("..") >= 0 || path.indexOf('\\') >= 0) {
         SerialUSB.print("[HTTP][STATIC] Ruta rechazada: ");
         SerialUSB.println(uri);
         sendTextResponse(client, "400 Bad Request", "text/plain; charset=utf-8", "Ruta no valida.");
@@ -367,9 +367,7 @@ void HttpServer::handleClient() {
     SerialUSB.print(" ");
     SerialUSB.println(uri);
 
-    if (method != "GET" && method != "HEAD" && uri.indexOf("/api/") == 0) {
-        sendTextResponse(client, "405 Method Not Allowed", "text/plain; charset=utf-8", "Metodo HTTP no permitido.");
-    } else if (uri == "/api/status") {
+    if (uri == "/api/status") {
         handleApiStatus(client);
     } else if (uri == "/api/payloads") {
         handleApiPayloads(client);
