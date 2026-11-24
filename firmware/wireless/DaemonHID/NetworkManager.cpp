@@ -24,10 +24,6 @@ namespace {
                 SerialUSB.println("[NETWORK] El firmware Wi-Fi rechazo el inicio del AP.");
                 break;
 
-            case WL_NO_MODULE:
-                SerialUSB.println("[NETWORK] No hay comunicacion con el modulo ESP32-S3.");
-                break;
-
             default:
                 SerialUSB.println("[NETWORK] Estado distinto al esperado para un punto de acceso.");
                 break;
