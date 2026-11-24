@@ -283,8 +283,18 @@ void HttpServer::handleStaticFile(
 
     // Abrir antes de enviar HTTP 200: evita responder 200 con un cuerpo vacio.
     File file = storageMgr->openFile(fullPath.c_str(), FILE_READ);
+
+    // Algunas implementaciones FAT resuelven mejor rutas sin '/' inicial.
+    // Reintentar de forma relativa antes de devolver 404.
+    if (!file && fullPath.startsWith("/")) {
+        const String relativePath = fullPath.substring(1);
+        SerialUSB.print("[HTTP][STATIC] Reintentando ruta relativa: ");
+        SerialUSB.println(relativePath);
+        file = storageMgr->openFile(relativePath.c_str(), FILE_READ);
+    }
+
     if (!file) {
-        SerialUSB.println("[HTTP][STATIC] ERROR: no se pudo abrir la ruta FAT.");
+        SerialUSB.println("[HTTP][STATIC] ERROR: no se pudo abrir la ruta FAT absoluta ni relativa.");
         String message = "Archivo no encontrado o no legible: ";
         message += fullPath;
         sendTextResponse(client, "404 Not Found", "text/plain; charset=utf-8", message.c_str());
