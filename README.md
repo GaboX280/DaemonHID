@@ -131,7 +131,7 @@ The integrated firmware uses the following pin assignment for the Arduino UNO R4
 | Joystick `SW` / `KEY` | D2 | Active-low button using `INPUT_PULLUP` |
 | Joystick `VCC`, `GND` | 5V, GND | Confirm the module pin labels and wiring |
 
-The TFT and microSD share the hardware SPI bus (D11, D12, D13) and must use separate chip-select pins (D9 and D10). The startup routine sets both chip-select pins HIGH before calling `SPI.begin()`, then initializes microSD, TFT, joystick, USB-HID, Wi-Fi AP, and HTTP server. The serial monitor prints a status summary for each subsystem.
+The TFT and microSD share the hardware SPI bus (D11, D12, D13) and must use separate chip-select pins (D9 and D10). The startup routine brings up the Wi-Fi AP first, then sets both chip-select pins HIGH before calling `SPI.begin()`, initializes microSD, TFT, joystick, and USB-HID, verifies the AP again, and starts the HTTP server. The serial monitor prints the Wi-Fi firmware version, AP status and a summary for each subsystem. If the initial AP start fails, the firmware resets the Wi-Fi module and retries once. `WL_AP_CONNECTED` is treated as an already active AP.
 
 ### Web filesystem diagnostics
 - Open `http://192.168.4.1/api/fs` while connected to the DaemonHID access point to inspect whether `/www`, `/www/index.html`, `/www/app.js`, and `/www/styles.css` exist and can be opened.
