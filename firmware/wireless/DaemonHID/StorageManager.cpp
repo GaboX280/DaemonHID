@@ -137,25 +137,60 @@ File StorageManager::openFile(const char* path, uint8_t mode) {
 
 bool StorageManager::streamFileToClient(const char* path, WiFiClient& client) {
     if (!initialized || path == nullptr) {
+        SerialUSB.println("[STORAGE] Stream cancelado: SD no lista o ruta nula.");
         return false;
     }
+
+    SerialUSB.print("[STORAGE] Abriendo archivo para HTTP: ");
+    SerialUSB.println(path);
 
     File file = SD.open(path, FILE_READ);
     if (!file) {
+        SerialUSB.println("[STORAGE] ERROR: SD.open() no pudo abrir el archivo.");
         return false;
     }
 
-    // Transmite en bloques fijos para optimizar la SRAM
+    const bool result = streamFileToClient(file, client);
+    file.close();
+    return result;
+}
+
+bool StorageManager::streamFileToClient(File& file, WiFiClient& client) {
+    if (!initialized || !file) {
+        SerialUSB.println("[STORAGE] Stream cancelado: archivo invalido o SD no lista.");
+        return false;
+    }
+
+    const size_t expectedBytes = file.size();
+    size_t sentBytes = 0;
     uint8_t buffer[64];
+
     while (file.available() && client.connected()) {
         const int bytesRead = file.read(buffer, sizeof(buffer));
+        if (bytesRead < 0) {
+            SerialUSB.println("[STORAGE] ERROR leyendo el archivo durante el stream.");
+            return false;
+        }
+
         if (bytesRead > 0) {
-            client.write(buffer, bytesRead);
+            const size_t written = client.write(buffer, static_cast<size_t>(bytesRead));
+            sentBytes += written;
+
+            if (written != static_cast<size_t>(bytesRead)) {
+                SerialUSB.println("[STORAGE] ERROR: transferencia HTTP incompleta.");
+                return false;
+            }
         }
     }
 
-    file.close();
-    return true;
+    const bool completed = (sentBytes == expectedBytes);
+    SerialUSB.print("[STORAGE] Transferencia HTTP: ");
+    SerialUSB.print(sentBytes);
+    SerialUSB.print("/");
+    SerialUSB.print(expectedBytes);
+    SerialUSB.println(completed ? " bytes enviados." : " bytes; transferencia incompleta.");
+
+    return completed && client.connected();
 }
 
 String StorageManager::getPayloadsAsJson(const char* dirPath) {
