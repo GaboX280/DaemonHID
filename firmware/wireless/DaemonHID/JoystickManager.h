@@ -34,6 +34,11 @@ enum class NavEvent {
 class JoystickManager {
 public:
     JoystickManager(uint8_t pinX, uint8_t pinY, uint8_t pinButton);
+
+    /**
+     * @brief Configura las entradas analogicas y el boton del joystick.
+     * @return true cuando los pines quedan configurados. No detecta cableado fisico.
+     */
     bool begin();
     void update();
 
