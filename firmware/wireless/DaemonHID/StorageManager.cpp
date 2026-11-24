@@ -10,6 +10,10 @@ bool StorageManager::begin(uint8_t chipSelect) {
         return true;
     }
 
+    // Mantiene la tarjeta deseleccionada antes de iniciar la comunicacion SPI.
+    pinMode(chipSelect, OUTPUT);
+    digitalWrite(chipSelect, HIGH);
+
     // Inicializa la comunicacion con la tarjeta microSD.
     initialized = SD.begin(chipSelect);
 
