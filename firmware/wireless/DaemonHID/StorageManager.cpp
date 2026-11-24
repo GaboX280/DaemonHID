@@ -190,7 +190,7 @@ bool StorageManager::streamFileToClient(File& file, WiFiClient& client) {
     SerialUSB.print(expectedBytes);
     SerialUSB.println(completed ? " bytes enviados." : " bytes; transferencia incompleta.");
 
-    return completed && client.connected();
+    return completed;
 }
 
 String StorageManager::getPayloadsAsJson(const char* dirPath) {
