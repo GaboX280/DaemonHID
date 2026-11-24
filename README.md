@@ -133,6 +133,11 @@ The integrated firmware uses the following pin assignment for the Arduino UNO R4
 
 The TFT and microSD share the hardware SPI bus (D11, D12, D13) and must use separate chip-select pins (D9 and D10). The startup routine sets both chip-select pins HIGH before calling `SPI.begin()`, then initializes microSD, TFT, joystick, USB-HID, Wi-Fi AP, and HTTP server. The serial monitor prints a status summary for each subsystem.
 
+### Web filesystem diagnostics
+- Open `http://192.168.4.1/api/fs` while connected to the DaemonHID access point to inspect whether `/www`, `/www/index.html`, `/www/app.js`, and `/www/styles.css` exist and can be opened.
+- The Serial Monitor logs each static HTTP request, its resolved FAT path, file size, and transfer result. A static file receives HTTP `200 OK` only after the file has been opened successfully.
+- Static assets are served from `/www/`; the expected root page is `/www/index.html`.
+
 **Electrical caution:** the UNO R4 WiFi uses 5 V logic. Some TFT breakouts and microSD boards operate at 3.3 V and may not tolerate 5 V signals. Verify whether each exact module includes a regulator and logic-level conversion; add a suitable level shifter when required. Do not infer voltage compatibility from the number of pins alone.
 
 ## Build and validation status
