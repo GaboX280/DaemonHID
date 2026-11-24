@@ -14,7 +14,7 @@ The device combines a USB connection to a host computer with a local Wi-Fi netwo
 
 The firmware is written in C++ using the Arduino framework and organized into modules for network connectivity, HTTP handling, USB-HID demonstrations, display, microSD storage, and joystick input. The project is intended for educational exploration and authorized testing in controlled environments.
 
-> **Current implementation status:** The integrated firmware has been compiled for the Arduino UNO R4 WiFi. Core functions—USB-HID demonstrations, the Wi-Fi access point, and the local HTTP page—have previously been validated on the physical board. The TFT, microSD, and joystick modules are implemented in the codebase but disabled by default; their physical integration and operation remain to be validated.
+> **Current implementation status:** The integrated sketch enables the TFT, microSD, and joystick modules in its configuration. Their startup routines are coordinated from `setup()`, but the physical wiring, voltage compatibility, and operation of each peripheral still require validation on the assembled device.
 
 ## Features
 ### Core functions
@@ -29,7 +29,7 @@ The firmware is written in C++ using the Arduino framework and organized into mo
 - **StorageManager:** provides microSD initialization and file operations, including writing, appending, reading, checking existence, and deleting files.
 - **JoystickManager:** reads the analog X/Y axes and integrated button to detect directional input and selections.
 
-The display, storage, and joystick modules are disabled in the integrated sketch through the `ENABLE_DISPLAY`, `ENABLE_STORAGE`, and `ENABLE_JOYSTICK` configuration constants. Their physical operation has not yet been validated as part of the integrated device.
+The display, storage, and joystick modules are controlled by the `ENABLE_DISPLAY`, `ENABLE_STORAGE`, and `ENABLE_JOYSTICK` constants in `DaemonHID.ino`. These options are currently enabled. A successful software initialization does not prove that a module is physically connected or electrically compatible.
 
 ## Hardware
 ### Main components
@@ -63,6 +63,7 @@ DaemonHID/
         └── DaemonHID/
             ├── DaemonHID.ino
             ├── AppConfig.h
+            ├── HardwareConfig.h
             ├── NetworkManager.h / .cpp
             ├── HttpServer.h / .cpp
             ├── HidManager.h / .cpp
@@ -76,6 +77,7 @@ DaemonHID/
 | --- | --- |
 | `DaemonHID.ino` | Coordinates initialization, the main loop, serial commands, and module updates. |
 | `AppConfig.h` | Centralizes firmware version and network configuration. |
+| `HardwareConfig.h` | Centralizes the UNO R4 WiFi pin assignment for TFT, microSD, joystick, and SPI. |
 | `NetworkManager` | Creates and configures the Wi-Fi access point. |
 | `HttpServer` | Starts the HTTP server and handles incoming client requests. |
 | `HidManager` | Schedules and updates the fixed USB-HID demonstrations. |
@@ -83,7 +85,7 @@ DaemonHID/
 | `StorageManager` | Manages microSD initialization and file operations. |
 | `JoystickManager` | Reads joystick axes and button input, including direction and press events. |
 
-Peripheral activation is controlled in `DaemonHID.ino`. The three `ENABLE_*` options are `false` by default. Keep them disabled until the corresponding hardware connections have been checked and the modules have been tested on the physical board.
+Peripheral activation is controlled in `DaemonHID.ino`. The three `ENABLE_*` options are currently `true`. Set an option to `false` when its module is not installed or is being isolated during troubleshooting. Confirm voltage compatibility and wiring before powering the assembled device.
 
 ## Getting started
 1. Install the Arduino IDE and the Arduino UNO R4 board package.
@@ -105,6 +107,40 @@ Peripheral activation is controlled in `DaemonHID.ino`. The three `ENABLE_*` opt
 2. Open `http://192.168.4.1` in a browser.
 
 The access point is a local network; it does not provide Internet access by itself. The HTTP page is hosted directly by the Arduino.
+
+## Peripheral pinout and startup sequence
+
+The integrated firmware uses the following pin assignment for the Arduino UNO R4 WiFi:
+
+| Module pin | UNO R4 WiFi | Notes |
+| --- | --- | --- |
+| TFT `SCL` | D13 | SPI clock (`SCK`) |
+| TFT `SDA` | D11 | SPI data to display (`MOSI/COPI`), not I2C SDA |
+| TFT `CS` | D9 | TFT chip select |
+| TFT `DC` / `A0` | D8 | Data/command selection |
+| TFT `RES` / `RST` | D7 | Display reset |
+| TFT `GND` | GND | Common ground |
+| TFT `VCC`, `BL` | Per module specification | Verify the actual breakout board before applying power |
+| microSD `SCK` | D13 | Shared SPI clock |
+| microSD `MOSI` / `DI` | D11 | Shared SPI data to module |
+| microSD `MISO` / `DO` | D12 | Data from module |
+| microSD `CS` / `SS` | D10 | Independent chip select |
+| microSD `VCC`, `GND` | Per module specification, GND common | Do not assume every six-pin board accepts 5 V |
+| Joystick `VRx` / `X` | A0 | Analog X axis |
+| Joystick `VRy` / `Y` | A1 | Analog Y axis |
+| Joystick `SW` / `KEY` | D2 | Active-low button using `INPUT_PULLUP` |
+| Joystick `VCC`, `GND` | 5V, GND | Confirm the module pin labels and wiring |
+
+The TFT and microSD share the hardware SPI bus (D11, D12, D13) and must use separate chip-select pins (D9 and D10). The startup routine brings up the Wi-Fi AP first, then sets both chip-select pins HIGH before calling `SPI.begin()`, initializes microSD, TFT, joystick, and USB-HID, verifies the AP status and SoftAP IP again, and starts the HTTP server. The serial monitor prints the Wi-Fi firmware version, AP status, SoftAP IP, retry attempts, and a summary for each subsystem. An AP is only marked ready when the status is active and `WiFi.softAPIP()` returns a non-zero address. If the initial AP start or IP query fails, the firmware resets the Wi-Fi module and retries. `WL_AP_CONNECTED` is treated as an already active AP. The network diagnostic uses the explicit SoftAP IP API, `WiFi.softAPIP()`, to query the access-point address directly.
+
+### Web filesystem diagnostics
+- Open `http://192.168.4.1/api/fs` while connected to the DaemonHID access point to inspect whether `/www`, `/www/index.htm`, `/www/app.js`, and `/www/styles.css` exist and can be opened.
+- The default Arduino SD library uses short FAT 8.3 filenames. Use `index.htm` (not `index.html`) for the dashboard entry point because `.html` has a four-character extension. `app.js` and `styles.css` already fit the 8.3 format.
+- Keep the corresponding source page in `firmware/web/index.htm`; `firmware/web/index.html` is retained for convenient local browser preview.
+- The Serial Monitor logs each static HTTP request, its resolved FAT path, file size, and transfer result. A static file receives HTTP `200 OK` only after the file has been opened successfully.
+- Static assets are served from `/www/`; the expected root page is `/www/index.htm`.
+
+**Electrical caution:** the UNO R4 WiFi uses 5 V logic. Some TFT breakouts and microSD boards operate at 3.3 V and may not tolerate 5 V signals. Verify whether each exact module includes a regulator and logic-level conversion; add a suitable level shifter when required. Do not infer voltage compatibility from the number of pins alone.
 
 ## Build and validation status
 The integrated firmware has been compiled successfully for the Arduino UNO R4 WiFi.

@@ -10,7 +10,8 @@ JoystickManager::JoystickManager(
     pinButton(pinButton) {
 }
 
-void JoystickManager::begin() {
+bool JoystickManager::begin() {
+    if (initialized) return true;
     // Configura los ejes analogicos como entradas.
     pinMode(pinX, INPUT);
     pinMode(pinY, INPUT);
@@ -27,9 +28,15 @@ void JoystickManager::begin() {
     buttonPressedEvent = false;
     navHoldStartTime = 0;
     lastRepeatTime = 0;
+    lastDebounceTime = millis();
+
+    initialized = true;
+    return true;
 }
 
 void JoystickManager::update() {
+    if (!initialized) return;
+
     // Lee los valores analogicos de ambos ejes.
     const int xValue = analogRead(pinX);
     const int yValue = analogRead(pinY);

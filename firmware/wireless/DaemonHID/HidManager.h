@@ -15,7 +15,11 @@ class StorageManager;
  */
 class HidManager {
 public:
-    void begin(StorageManager* storage = nullptr);
+    /**
+     * @brief Inicializa la interfaz Keyboard USB y enlaza el almacenamiento.
+     * @return true cuando se ejecuta la inicializacion de Keyboard.
+     */
+    bool begin(StorageManager* storage = nullptr);
     void setStorageManager(StorageManager* storage);
 
     bool requestDemoText();

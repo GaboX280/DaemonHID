@@ -58,6 +58,14 @@ public:
     bool streamFileToClient(const char* path, WiFiClient& client);
 
     /**
+     * @brief Transmite un archivo previamente abierto por bloques.
+     * @param file Archivo abierto en modo lectura.
+     * @param client Cliente HTTP de destino.
+     * @return true si se completo la transferencia mientras el cliente seguia conectado.
+     */
+    bool streamFileToClient(File& file, WiFiClient& client);
+
+    /**
      * @brief Obtiene una lista en formato JSON de los archivos en un directorio.
      * @param dirPath Directorio a escanear (por defecto /payloads).
      * @return Cadena JSON con el arreglo de nombres de archivos.

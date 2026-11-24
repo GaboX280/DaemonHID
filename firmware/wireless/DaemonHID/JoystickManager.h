@@ -34,7 +34,12 @@ enum class NavEvent {
 class JoystickManager {
 public:
     JoystickManager(uint8_t pinX, uint8_t pinY, uint8_t pinButton);
-    void begin();
+
+    /**
+     * @brief Configura las entradas analogicas y el boton del joystick.
+     * @return true cuando los pines quedan configurados. No detecta cableado fisico.
+     */
+    bool begin();
     void update();
 
     JoystickDirection getDirection() const;
@@ -45,6 +50,8 @@ private:
     uint8_t pinX;
     uint8_t pinY;
     uint8_t pinButton;
+
+    bool initialized = false;
 
     JoystickDirection direction = JoystickDirection::Center;
     JoystickDirection lastNavDirection = JoystickDirection::Center;

@@ -18,6 +18,20 @@ int HttpServer::getFreeRam() {
 namespace {
     constexpr unsigned long CLIENT_TIMEOUT_MS = 1000;
 
+    bool canOpenStorageFile(StorageManager* storage, const char* path) {
+        if (storage == nullptr || !storage->isReady()) {
+            return false;
+        }
+
+        File file = storage->openFile(path, FILE_READ);
+        if (!file) {
+            return false;
+        }
+
+        file.close();
+        return true;
+    }
+
     const char FALLBACK_HTML[] =
         "<!DOCTYPE html>"
         "<html lang='es'>"
@@ -37,9 +51,9 @@ namespace {
         "<body>"
         "<div class='card'>"
         "<h1>DaemonHID</h1>"
-        "<p><span class='badge'>MicroSD No Lista</span></p>"
-        "<p>El punto de acceso y el servidor web estan activos, pero no se encontro la tarjeta MicroSD o la carpeta <code>/www/</code>.</p>"
-        "<p>Para acceder al panel interactivo, inserte una MicroSD formateada en FAT32 con los archivos web en la carpeta <code>/www/</code>.</p>"
+        "<p><span class='badge'>Panel web no disponible</span></p>"
+        "<p>El servidor esta activo, pero no pudo cargar el archivo <code>/www/index.html</code>.</p>"
+        "<p>Compruebe que la MicroSD este lista y que <code>index.html</code>, <code>app.js</code> y <code>styles.css</code> esten dentro de la carpeta <code>/www/</code>.</p>"
         "</div>"
         "</body>"
         "</html>";
@@ -127,6 +141,75 @@ void HttpServer::handleApiPayloads(WiFiClient& client) {
     sendJsonResponse(client, "200 OK", json);
 }
 
+void HttpServer::handleApiFilesystem(WiFiClient& client) {
+    const bool sdReady = storageMgr && storageMgr->isReady();
+    const bool wwwExists = sdReady && storageMgr->exists("/www");
+
+    // La biblioteca SD clasica utiliza nombres FAT cortos 8.3. La extension
+    // ".html" tiene cuatro caracteres; por eso el firmware sirve INDEX.HTM.
+    const bool indexHtmExists = sdReady && storageMgr->exists("/www/index.htm");
+    const bool indexHtmlExists = sdReady && storageMgr->exists("/www/index.html");
+    const bool appExists = sdReady && storageMgr->exists("/www/app.js");
+    const bool cssExists = sdReady && storageMgr->exists("/www/styles.css");
+
+    // Comprobar apertura real de cada recurso, no solo la existencia.
+    const bool indexAbsoluteOpen = canOpenStorageFile(storageMgr, "/www/index.htm");
+    const bool indexRelativeOpen = canOpenStorageFile(storageMgr, "www/index.htm");
+    const bool appAbsoluteOpen = canOpenStorageFile(storageMgr, "/www/app.js");
+    const bool appRelativeOpen = canOpenStorageFile(storageMgr, "www/app.js");
+    const bool cssAbsoluteOpen = canOpenStorageFile(storageMgr, "/www/styles.css");
+    const bool cssRelativeOpen = canOpenStorageFile(storageMgr, "www/styles.css");
+
+    SerialUSB.println("[HTTP][FS] Diagnostico de archivos web:");
+    SerialUSB.print("[HTTP][FS] SD lista: ");
+    SerialUSB.println(sdReady ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] /www existe: ");
+    SerialUSB.println(wwwExists ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] /www/index.htm existe/abre: ");
+    SerialUSB.println(indexHtmExists && indexAbsoluteOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] /www/index.html existe (solo diagnostico): ");
+    SerialUSB.println(indexHtmlExists ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] /www/app.js existe/abre: ");
+    SerialUSB.println(appExists && appAbsoluteOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] /www/styles.css existe/abre: ");
+    SerialUSB.println(cssExists && cssAbsoluteOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] Ruta relativa www/index.htm abre: ");
+    SerialUSB.println(indexRelativeOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] Ruta relativa www/app.js abre: ");
+    SerialUSB.println(appRelativeOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] Ruta relativa www/styles.css abre: ");
+    SerialUSB.println(cssRelativeOpen ? "SI" : "NO");
+
+    String json = "{";
+    json += "\"sd_ready\":";
+    json += sdReady ? "true" : "false";
+    json += ",\"www_exists\":";
+    json += wwwExists ? "true" : "false";
+    json += ",\"index_htm_exists\":";
+    json += indexHtmExists ? "true" : "false";
+    json += ",\"index_html_exists\":";
+    json += indexHtmlExists ? "true" : "false";
+    json += ",\"index_absolute_open\":";
+    json += indexAbsoluteOpen ? "true" : "false";
+    json += ",\"index_relative_open\":";
+    json += indexRelativeOpen ? "true" : "false";
+    json += ",\"app_exists\":";
+    json += appExists ? "true" : "false";
+    json += ",\"app_absolute_open\":";
+    json += appAbsoluteOpen ? "true" : "false";
+    json += ",\"app_relative_open\":";
+    json += appRelativeOpen ? "true" : "false";
+    json += ",\"css_exists\":";
+    json += cssExists ? "true" : "false";
+    json += ",\"css_absolute_open\":";
+    json += cssAbsoluteOpen ? "true" : "false";
+    json += ",\"css_relative_open\":";
+    json += cssRelativeOpen ? "true" : "false";
+    json += "}";
+
+    sendJsonResponse(client, "200 OK", json);
+}
+
 void HttpServer::handleApiExecute(WiFiClient& client, const String& uri) {
     const int idx = uri.indexOf("file=");
     if (idx == -1) {
@@ -168,33 +251,106 @@ void HttpServer::handleApiAbort(WiFiClient& client) {
     sendJsonResponse(client, "200 OK", "{\"success\":true,\"message\":\"Ejecucion cancelada exitosamente\"}");
 }
 
-void HttpServer::handleStaticFile(WiFiClient& client, const String& uri) {
+void HttpServer::handleStaticFile(
+    WiFiClient& client,
+    const String& uri,
+    const String& method
+) {
     String path = uri;
-    if (path == "/" || path == "") {
-        path = "/index.html";
+
+    // El servidor solo necesita la ruta; la query string no forma parte del nombre.
+    const int queryIndex = path.indexOf('?');
+    if (queryIndex >= 0) {
+        path = path.substring(0, queryIndex);
     }
 
-    const String fullPath = "/www" + path;
+    const int fragmentIndex = path.indexOf('#');
+    if (fragmentIndex >= 0) {
+        path = path.substring(0, fragmentIndex);
+    }
 
-    if (storageMgr && storageMgr->isReady() && storageMgr->exists(fullPath.c_str())) {
-        client.println("HTTP/1.1 200 OK");
-        client.print("Content-Type: ");
-        client.println(StorageManager::getMimeType(fullPath.c_str()));
-        client.println("Connection: close");
-        client.println("Cache-Control: max-age=3600");
-        client.println();
+    if (path.length() == 0 || path == "/" || path == "/index.html") {
+        // INDEX.HTM cumple el formato FAT 8.3 de la biblioteca SD clasica.
+        path = "/index.htm";
+    }
 
-        storageMgr->streamFileToClient(fullPath.c_str(), client);
+    if (!path.startsWith("/")) {
+        path = "/" + path;
+    }
+
+    // Evitar traversal y separadores alternativos al construir la ruta FAT.
+    if (path.indexOf("..") >= 0 || path.indexOf('\\') >= 0) {
+        SerialUSB.print("[HTTP][STATIC] Ruta rechazada: ");
+        SerialUSB.println(uri);
+        sendTextResponse(client, "400 Bad Request", "text/plain; charset=utf-8", "Ruta no valida.");
         return;
     }
 
-    if (storageMgr && storageMgr->isReady()) {
-        sendTextResponse(client, "404 Not Found", "text/plain; charset=utf-8", "Archivo no encontrado en la tarjeta MicroSD.");
+    // Aceptar tanto URLs normales (/index.html) como URLs que ya incluyan /www/.
+    String fullPath = path.startsWith("/www/")
+        ? path
+        : String("/www") + path;
+
+    SerialUSB.println("[HTTP][STATIC] Solicitud de archivo:");
+    SerialUSB.print("[HTTP][STATIC] Metodo: ");
+    SerialUSB.println(method);
+    SerialUSB.print("[HTTP][STATIC] URI: ");
+    SerialUSB.println(uri);
+    SerialUSB.print("[HTTP][STATIC] Ruta FAT: ");
+    SerialUSB.println(fullPath);
+
+    if (storageMgr == nullptr || !storageMgr->isReady()) {
+        SerialUSB.println("[HTTP][STATIC] SD no disponible; se sirve pagina alternativa.");
+        sendFallbackPage(client);
         return;
     }
 
-    // Si la MicroSD no está lista, servir la página de fallback
-    sendFallbackPage(client);
+    // Abrir antes de enviar HTTP 200: evita responder 200 con un cuerpo vacio.
+    File file = storageMgr->openFile(fullPath.c_str(), FILE_READ);
+
+    // Algunas implementaciones FAT resuelven mejor rutas sin '/' inicial.
+    // Reintentar de forma relativa antes de devolver 404.
+    if (!file && fullPath.startsWith("/")) {
+        const String relativePath = fullPath.substring(1);
+        SerialUSB.print("[HTTP][STATIC] Reintentando ruta relativa: ");
+        SerialUSB.println(relativePath);
+        file = storageMgr->openFile(relativePath.c_str(), FILE_READ);
+    }
+
+    if (!file) {
+        SerialUSB.println("[HTTP][STATIC] ERROR: no se pudo abrir la ruta FAT absoluta ni relativa.");
+        String message = "Archivo no encontrado o no legible: ";
+        message += fullPath;
+        sendTextResponse(client, "404 Not Found", "text/plain; charset=utf-8", message.c_str());
+        return;
+    }
+
+    const size_t contentLength = file.size();
+    const char* contentType = StorageManager::getMimeType(fullPath.c_str());
+
+    SerialUSB.print("[HTTP][STATIC] Archivo abierto. Bytes: ");
+    SerialUSB.println(contentLength);
+    SerialUSB.print("[HTTP][STATIC] Content-Type: ");
+    SerialUSB.println(contentType);
+
+    client.println("HTTP/1.1 200 OK");
+    client.print("Content-Type: ");
+    client.println(contentType);
+    client.print("Content-Length: ");
+    client.println(contentLength);
+    client.println("Connection: close");
+    client.println("Cache-Control: no-store");
+    client.println("X-Content-Type-Options: nosniff");
+    client.println();
+
+    if (method != "HEAD") {
+        const bool streamed = storageMgr->streamFileToClient(file, client);
+        SerialUSB.println(streamed
+            ? "[HTTP][STATIC] Transferencia completada."
+            : "[HTTP][STATIC] ERROR durante la transferencia.");
+    }
+
+    file.close();
 }
 
 void HttpServer::handleClient() {
@@ -240,17 +396,23 @@ void HttpServer::handleClient() {
     const String method = requestLine.substring(0, firstSpace);
     const String uri = requestLine.substring(firstSpace + 1, secondSpace);
 
-    // Enrutamiento de la API REST
+    SerialUSB.print("[HTTP] ");
+    SerialUSB.print(method);
+    SerialUSB.print(" ");
+    SerialUSB.println(uri);
+
     if (uri == "/api/status") {
         handleApiStatus(client);
     } else if (uri == "/api/payloads") {
         handleApiPayloads(client);
+    } else if (uri == "/api/fs") {
+        handleApiFilesystem(client);
     } else if (uri.startsWith("/api/execute")) {
         handleApiExecute(client, uri);
     } else if (uri.startsWith("/api/abort")) {
         handleApiAbort(client);
     } else {
-        handleStaticFile(client, uri);
+        handleStaticFile(client, uri, method);
     }
 
     client.stop();

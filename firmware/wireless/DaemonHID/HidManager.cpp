@@ -1,8 +1,9 @@
 #include "HidManager.h"
 #include "StorageManager.h"
 
-void HidManager::begin(StorageManager* storage) {
+bool HidManager::begin(StorageManager* storage) {
     storageMgr = storage;
+    if (initialized) return true;
 
     // Espera a que la interfaz USB del UNO R4 WiFi esté lista.
     delay(500);
@@ -12,6 +13,7 @@ void HidManager::begin(StorageManager* storage) {
 
     initialized = true;
     SerialUSB.println("[HID] Interfaz USB HID inicializada.");
+    return true;
 }
 
 void HidManager::setStorageManager(StorageManager* storage) {
