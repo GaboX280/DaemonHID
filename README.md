@@ -134,9 +134,11 @@ The integrated firmware uses the following pin assignment for the Arduino UNO R4
 The TFT and microSD share the hardware SPI bus (D11, D12, D13) and must use separate chip-select pins (D9 and D10). The startup routine brings up the Wi-Fi AP first, then sets both chip-select pins HIGH before calling `SPI.begin()`, initializes microSD, TFT, joystick, and USB-HID, verifies the AP again, and starts the HTTP server. The serial monitor prints the Wi-Fi firmware version, AP status and a summary for each subsystem. If the initial AP start fails, the firmware resets the Wi-Fi module and retries once. `WL_AP_CONNECTED` is treated as an already active AP.
 
 ### Web filesystem diagnostics
-- Open `http://192.168.4.1/api/fs` while connected to the DaemonHID access point to inspect whether `/www`, `/www/index.html`, `/www/app.js`, and `/www/styles.css` exist and can be opened.
+- Open `http://192.168.4.1/api/fs` while connected to the DaemonHID access point to inspect whether `/www`, `/www/index.htm`, `/www/app.js`, and `/www/styles.css` exist and can be opened.
+- The default Arduino SD library uses short FAT 8.3 filenames. Use `index.htm` (not `index.html`) for the dashboard entry point because `.html` has a four-character extension. `app.js` and `styles.css` already fit the 8.3 format.
+- Keep the corresponding source page in `firmware/web/index.htm`; `firmware/web/index.html` is retained for convenient local browser preview.
 - The Serial Monitor logs each static HTTP request, its resolved FAT path, file size, and transfer result. A static file receives HTTP `200 OK` only after the file has been opened successfully.
-- Static assets are served from `/www/`; the expected root page is `/www/index.html`.
+- Static assets are served from `/www/`; the expected root page is `/www/index.htm`.
 
 **Electrical caution:** the UNO R4 WiFi uses 5 V logic. Some TFT breakouts and microSD boards operate at 3.3 V and may not tolerate 5 V signals. Verify whether each exact module includes a regulator and logic-level conversion; add a suitable level shifter when required. Do not infer voltage compatibility from the number of pins alone.
 
