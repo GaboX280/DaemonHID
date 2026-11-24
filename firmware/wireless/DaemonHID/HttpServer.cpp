@@ -144,44 +144,67 @@ void HttpServer::handleApiPayloads(WiFiClient& client) {
 void HttpServer::handleApiFilesystem(WiFiClient& client) {
     const bool sdReady = storageMgr && storageMgr->isReady();
     const bool wwwExists = sdReady && storageMgr->exists("/www");
-    const bool indexExists = sdReady && storageMgr->exists("/www/index.html");
+
+    // La biblioteca SD clasica utiliza nombres FAT cortos 8.3. La extension
+    // ".html" tiene cuatro caracteres; por eso el firmware sirve INDEX.HTM.
+    const bool indexHtmExists = sdReady && storageMgr->exists("/www/index.htm");
+    const bool indexHtmlExists = sdReady && storageMgr->exists("/www/index.html");
     const bool appExists = sdReady && storageMgr->exists("/www/app.js");
     const bool cssExists = sdReady && storageMgr->exists("/www/styles.css");
 
-    // Comparar apertura con ruta absoluta y relativa ayuda a detectar
-    // diferencias en el manejo de rutas de la biblioteca SD.
-    const bool indexAbsoluteOpen = canOpenStorageFile(storageMgr, "/www/index.html");
-    const bool indexRelativeOpen = canOpenStorageFile(storageMgr, "www/index.html");
+    // Comprobar apertura real de cada recurso, no solo la existencia.
+    const bool indexAbsoluteOpen = canOpenStorageFile(storageMgr, "/www/index.htm");
+    const bool indexRelativeOpen = canOpenStorageFile(storageMgr, "www/index.htm");
+    const bool appAbsoluteOpen = canOpenStorageFile(storageMgr, "/www/app.js");
+    const bool appRelativeOpen = canOpenStorageFile(storageMgr, "www/app.js");
+    const bool cssAbsoluteOpen = canOpenStorageFile(storageMgr, "/www/styles.css");
+    const bool cssRelativeOpen = canOpenStorageFile(storageMgr, "www/styles.css");
 
     SerialUSB.println("[HTTP][FS] Diagnostico de archivos web:");
     SerialUSB.print("[HTTP][FS] SD lista: ");
     SerialUSB.println(sdReady ? "SI" : "NO");
     SerialUSB.print("[HTTP][FS] /www existe: ");
     SerialUSB.println(wwwExists ? "SI" : "NO");
-    SerialUSB.print("[HTTP][FS] /www/index.html existe/abre: ");
-    SerialUSB.println(indexExists && indexAbsoluteOpen ? "SI" : "NO");
-    SerialUSB.print("[HTTP][FS] /www/app.js existe: ");
-    SerialUSB.println(appExists ? "SI" : "NO");
-    SerialUSB.print("[HTTP][FS] /www/styles.css existe: ");
-    SerialUSB.println(cssExists ? "SI" : "NO");
-    SerialUSB.print("[HTTP][FS] Ruta relativa www/index.html abre: ");
+    SerialUSB.print("[HTTP][FS] /www/index.htm existe/abre: ");
+    SerialUSB.println(indexHtmExists && indexAbsoluteOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] /www/index.html existe (solo diagnostico): ");
+    SerialUSB.println(indexHtmlExists ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] /www/app.js existe/abre: ");
+    SerialUSB.println(appExists && appAbsoluteOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] /www/styles.css existe/abre: ");
+    SerialUSB.println(cssExists && cssAbsoluteOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] Ruta relativa www/index.htm abre: ");
     SerialUSB.println(indexRelativeOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] Ruta relativa www/app.js abre: ");
+    SerialUSB.println(appRelativeOpen ? "SI" : "NO");
+    SerialUSB.print("[HTTP][FS] Ruta relativa www/styles.css abre: ");
+    SerialUSB.println(cssRelativeOpen ? "SI" : "NO");
 
     String json = "{";
     json += "\"sd_ready\":";
     json += sdReady ? "true" : "false";
     json += ",\"www_exists\":";
     json += wwwExists ? "true" : "false";
-    json += ",\"index_exists\":";
-    json += indexExists ? "true" : "false";
+    json += ",\"index_htm_exists\":";
+    json += indexHtmExists ? "true" : "false";
+    json += ",\"index_html_exists\":";
+    json += indexHtmlExists ? "true" : "false";
     json += ",\"index_absolute_open\":";
     json += indexAbsoluteOpen ? "true" : "false";
     json += ",\"index_relative_open\":";
     json += indexRelativeOpen ? "true" : "false";
     json += ",\"app_exists\":";
     json += appExists ? "true" : "false";
+    json += ",\"app_absolute_open\":";
+    json += appAbsoluteOpen ? "true" : "false";
+    json += ",\"app_relative_open\":";
+    json += appRelativeOpen ? "true" : "false";
     json += ",\"css_exists\":";
     json += cssExists ? "true" : "false";
+    json += ",\"css_absolute_open\":";
+    json += cssAbsoluteOpen ? "true" : "false";
+    json += ",\"css_relative_open\":";
+    json += cssRelativeOpen ? "true" : "false";
     json += "}";
 
     sendJsonResponse(client, "200 OK", json);
@@ -246,8 +269,9 @@ void HttpServer::handleStaticFile(
         path = path.substring(0, fragmentIndex);
     }
 
-    if (path.length() == 0 || path == "/") {
-        path = "/index.html";
+    if (path.length() == 0 || path == "/" || path == "/index.html") {
+        // INDEX.HTM cumple el formato FAT 8.3 de la biblioteca SD clasica.
+        path = "/index.htm";
     }
 
     if (!path.startsWith("/")) {
