@@ -23,9 +23,10 @@ private:
 
     void handleApiStatus(WiFiClient& client);
     void handleApiPayloads(WiFiClient& client);
+    void handleApiFilesystem(WiFiClient& client);
     void handleApiExecute(WiFiClient& client, const String& uri);
     void handleApiAbort(WiFiClient& client);
-    void handleStaticFile(WiFiClient& client, const String& uri);
+    void handleStaticFile(WiFiClient& client, const String& uri, const String& method);
     void sendFallbackPage(WiFiClient& client);
     void sendJsonResponse(WiFiClient& client, const char* status, const String& jsonBody);
     void sendTextResponse(WiFiClient& client, const char* status, const char* contentType, const char* body);
