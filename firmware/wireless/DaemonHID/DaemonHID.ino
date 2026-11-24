@@ -174,6 +174,14 @@ void initializeHttpServerModule() {
     SerialUSB.println();
     SerialUSB.println("[HTTP] Iniciando servidor web...");
 
+    // Algunos modulos perifericos pueden afectar el arranque si hay un
+    // problema electrico. Comprobar el SoftAP antes de iniciar el servidor.
+    const uint8_t apStatus = WiFi.status();
+    if (apStatus != WL_AP_LISTENING && apStatus != WL_AP_CONNECTED) {
+        SerialUSB.println("[HTTP] El AP no esta activo despues de iniciar perifericos. Reintentando...");
+        networkReady = networkManager.beginAccessPoint();
+    }
+
     if (!networkReady) {
         httpServerReady = false;
         SerialUSB.println("[HTTP] Omitido: el punto de acceso no esta disponible.");
@@ -213,17 +221,21 @@ void setup() {
     SerialUSB.print("Version del firmware: ");
     SerialUSB.println(AppConfig::FIRMWARE_VERSION);
 
-    // Inicializar primero el bus y los perifericos que lo comparten.
+    // Levantar primero el punto de acceso, antes de inicializar perifericos.
+    // Esto permite que la red este disponible cuanto antes y ayuda a aislar
+    // problemas de alimentacion o interferencia durante el arranque.
+    initializeNetworkModule();
+
+    // Inicializar el bus y los perifericos que comparten SPI.
     initializeSharedSPIBus();
     initializeStorageModule();
     initializeDisplayModule();
     initializeJoystickModule();
 
-    // USB HID es independiente del bus SPI.
+    // USB HID es independiente del bus SPI y de la red.
     initializeHIDModule();
 
-    // La interfaz HTTP depende de que el punto de acceso este activo.
-    initializeNetworkModule();
+    // Verificar de nuevo el AP despues de activar los perifericos e iniciar HTTP.
     initializeHttpServerModule();
 
     SerialUSB.println();
